@@ -1,18 +1,14 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v15.0 Turbo)
+    // Lampa Plugin: i6poH3a "Королева" (v16.0 Full Data)
     var token = 'f8lgdpq2';
-    // Используем шлюз, который Vega не может отличить от обычного сайта
-    var proxy = 'https://api.allorigins.win/get?url=';
-    var base  = 'https://lampac.hdgo.me/lite/events';
+    var gateway = 'https://api.allorigins.win/get?url=';
+    var base = 'https://lampac.hdgo.me/lite/events';
 
     function startPlugin() {
         window.hdgo_plugin = true;
         
-        // Магическое уведомление при старте
-        setTimeout(function(){ 
-            Lampa.Noty.show('Королева: Канал связи активен! 👑'); 
-        }, 3000);
+        Lampa.Noty.show('Королева: Магия активирована! 👑');
 
         Lampa.Component.add('hdgo', function(object) {
             var network = new Lampa.Reguest();
@@ -22,25 +18,34 @@
             this.create = function() {
                 Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
                 
-                // Двойное шифрование адреса запроса
-                var url = proxy + encodeURIComponent(base + '?id=' + object.movie.id + '&token=' + token) + '&ts=' + Date.now();
+                var targetUrl = base + '?id=' + object.movie.id + '&token=' + token + '&cb=' + Date.now();
+                var finalUrl  = gateway + encodeURIComponent(targetUrl);
 
-                network.native(url, function(result) {
+                Lampa.Noty.show('Королева: Запрашиваю переводы...');
+
+                network.native(finalUrl, function(result) {
                     try {
-                        var data = result.contents;
-                        if (typeof data === 'string') data = JSON.parse(data);
+                        // Пытаемся достать данные из обертки прокси
+                        var contents = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
                         
-                        if (data && data.length) {
-                            files.append(data);
+                        if (contents && contents.length) {
+                            Lampa.Noty.show('Королева: Нашла ' + contents.length + ' варианта(ов)!');
+                            files.append(contents);
                             _this.start();
                         } else {
-                            Lampa.Noty.show('Королева: Сервер пуст (Vega блокирует)');
+                            // Если пусто, добавляем техническую кнопку для проверки
+                            files.append([{
+                                title: 'Ошибка: Провайдер Vega блокирует данные',
+                                quality: 'DNS?',
+                                info: 'Попробуй сменить DNS в ТВ на 1.1.1.1'
+                            }]);
+                            _this.start();
                         }
                     } catch(e) {
-                        Lampa.Noty.show('Королева: Ошибка декодирования');
+                        Lampa.Noty.show('Королева: Ошибка разбора данных');
                     }
                 }, function() {
-                    Lampa.Noty.show('Королева: Сеть заблокирована');
+                    Lampa.Noty.show('Королева: Vega полностью закрыла канал');
                 });
 
                 return files.render();
@@ -63,7 +68,7 @@
             this.destroy = function() { network.clear(); files.destroy(); };
         });
 
-        // Кнопка "Королева" с улучшенным дизайном
+        // Создаем фиолетовую кнопку "Королева"
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
