@@ -1,14 +1,14 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v18.0 Nuclear)
+    // Lampa Plugin: i6poH3a "Королева" (v19.0 Debug)
     var token = 'f8lgdpq2';
-    // Пробуем другой шлюз, который реже блокируют
-    var proxy = 'https://api.codetabs.com/v1/proxy?quest=';
     var base  = 'https://lampac.hdgo.me/lite/events';
+    var proxy = 'https://api.allorigins.win/get?url=';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Система запущена! 👑');
+        
+        Lampa.Noty.show('Королева: Скрипт активен! 👑');
 
         Lampa.Component.add('hdgo', function(object) {
             var network = new Lampa.Reguest();
@@ -19,28 +19,40 @@
             this.create = function() {
                 Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
                 
-                // Сначала рисуем "заглушку", чтобы экран не был пустым
+                // ШАГ 1: Сразу рисуем кнопки, не дожидаясь интернета!
                 files.append([{
-                    title: '⏳ Королева ищет проход...',
-                    quality: 'WAIT',
-                    info: 'Пробиваем блокировку провайдера Vega'
+                    title: '⏳ Проверка связи с Vega...',
+                    quality: 'LOG',
+                    info: 'Если эта надпись есть - плагин работает!'
                 }]);
 
-                var targetUrl = base + '?id=' + object.movie.id + '&token=' + token;
+                var targetUrl = base + '?id=' + object.movie.id + '&token=' + token + '&cb=' + Date.now();
                 var finalUrl  = proxy + encodeURIComponent(targetUrl);
 
-                network.native(finalUrl, function(json) {
-                    files.clear(); // Удаляем надпись загрузки
-                    if (json && json.length) {
-                        Lampa.Noty.show('Королева: Доступ получен!');
-                        files.append(json);
-                    } else {
-                        files.append([{title: '❌ Vega заблокировала ответ сервера', quality: 'BLOCK'}]);
+                // ШАГ 2: Пытаемся стянуть реальные переводы
+                network.native(finalUrl, function(result) {
+                    files.clear();
+                    try {
+                        var data = result.contents;
+                        if (typeof data === 'string') data = JSON.parse(data);
+                        
+                        if (data && data.length) {
+                            Lampa.Noty.show('Королева: Переводы найдены!');
+                            files.append(data);
+                        } else {
+                            files.append([{title: '❌ Провайдер вернул пустой ответ', quality: 'DPI'}]);
+                        }
+                    } catch(e) {
+                        files.append([{title: '❌ Ошибка расшифровки данных', quality: 'ERR'}]);
                     }
                     _this.start();
                 }, function() {
                     files.clear();
-                    files.append([{title: '❌ Ошибка сети: Провайдер Vega', quality: 'DPI'}]);
+                    files.append([{
+                        title: '❌ Vega полностью заблокировала прокси',
+                        quality: 'BLOCK',
+                        info: 'Нужно сменить DNS в настройках ТВ на 1.1.1.1'
+                    }]);
                     _this.start();
                 });
 
@@ -64,7 +76,6 @@
             this.destroy = function() { network.clear(); scroll.destroy(); files.destroy(); };
         });
 
-        // Кнопка в карточке
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
@@ -79,10 +90,4 @@
         });
     }
 
-    if (window.Lampa) startPlugin();
-    else {
-        var wait = setInterval(function() {
-            if (window.Lampa) { clearInterval(wait); startPlugin(); }
-        }, 500);
-    }
-})();
+    if (window
