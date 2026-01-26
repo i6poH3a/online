@@ -1,14 +1,14 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v17.0 Google-Bypass)
+    // Lampa Plugin: i6poH3a "Королева" (v18.0 Nuclear)
     var token = 'f8lgdpq2';
-    // Используем шлюз Google Apps Script (этот "щит" Vega не пробьет)
-    var proxy = 'https://api.allorigins.win/get?url=';
+    // Пробуем другой шлюз, который реже блокируют
+    var proxy = 'https://api.codetabs.com/v1/proxy?quest=';
     var base  = 'https://lampac.hdgo.me/lite/events';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Канал зашифрован! 👑');
+        Lampa.Noty.show('Королева: Система запущена! 👑');
 
         Lampa.Component.add('hdgo', function(object) {
             var network = new Lampa.Reguest();
@@ -19,44 +19,32 @@
             this.create = function() {
                 Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
                 
-                var targetUrl = base + '?id=' + (object.movie.id) + '&token=' + token + '&cb=' + Date.now();
+                // Сначала рисуем "заглушку", чтобы экран не был пустым
+                files.append([{
+                    title: '⏳ Королева ищет проход...',
+                    quality: 'WAIT',
+                    info: 'Пробиваем блокировку провайдера Vega'
+                }]);
+
+                var targetUrl = base + '?id=' + object.movie.id + '&token=' + token;
                 var finalUrl  = proxy + encodeURIComponent(targetUrl);
 
-                network.native(finalUrl, function(result) {
-                    try {
-                        var json = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
-                        
-                        if (json && json.length) {
-                            Lampa.Noty.show('Королева: Переводы загружены!');
-                            files.append(json);
-                            _this.start();
-                        } else {
-                            Lampa.Noty.show('Королева: Пустой ответ (Vega DPI)');
-                            _this.testItems(); // Показываем тест, если пусто
-                        }
-                    } catch(e) {
-                        _this.testItems(); 
+                network.native(finalUrl, function(json) {
+                    files.clear(); // Удаляем надпись загрузки
+                    if (json && json.length) {
+                        Lampa.Noty.show('Королева: Доступ получен!');
+                        files.append(json);
+                    } else {
+                        files.append([{title: '❌ Vega заблокировала ответ сервера', quality: 'BLOCK'}]);
                     }
+                    _this.start();
                 }, function() {
-                    Lampa.Noty.show('Королева: Сеть заблокирована');
-                    _this.testItems();
+                    files.clear();
+                    files.append([{title: '❌ Ошибка сети: Провайдер Vega', quality: 'DPI'}]);
+                    _this.start();
                 });
 
                 return files.render();
-            };
-
-            // Если провайдер всё заблокировал, покажем хоть это для проверки
-            this.testItems = function() {
-                files.append([{
-                    title: '⚠️ Канал заблокирован провайдером',
-                    quality: 'INFO',
-                    info: 'Срочно смени DNS в ТВ на 1.1.1.1'
-                }, {
-                    title: 'Попробовать еще раз',
-                    quality: 'RETRY',
-                    info: 'Нажми назад и зайди снова'
-                }]);
-                _this.start();
             };
 
             this.render = function() { return files.render(); };
@@ -76,4 +64,25 @@
             this.destroy = function() { network.clear(); scroll.destroy(); files.destroy(); };
         });
 
-        Lampa.Listener.
+        // Кнопка в карточке
+        Lampa.Listener.follow('full', function(e) {
+            if (e.type == 'complite') {
+                var render = e.object.activity.render();
+                if (!render.find('.view--online').length) {
+                    var btn = $('<div class="full-start__button selector view--online" style="background: #7b1fa2 !important; border-radius: 8px;"><span>Королева 👑</span></div>');
+                    btn.on('hover:enter', function() {
+                        Lampa.Activity.push({ title: 'Королева', component: 'hdgo', movie: e.data.movie });
+                    });
+                    render.find('.view--torrent').after(btn);
+                }
+            }
+        });
+    }
+
+    if (window.Lampa) startPlugin();
+    else {
+        var wait = setInterval(function() {
+            if (window.Lampa) { clearInterval(wait); startPlugin(); }
+        }, 500);
+    }
+})();
