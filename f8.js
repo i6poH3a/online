@@ -1,24 +1,25 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v33.0 Titanium)
+    // Lampa Plugin: i6poH3a "Королева" (v34.0 Stealth)
     var token = 'f8lgdpq2';
     var base  = 'https://lampac.hdgo.me/lite/events';
-    var proxy = 'https://corsproxy.io/?'; // Используем более мощный шлюз
+    // Используем максимально скрытный шлюз
+    var proxy = 'https://api.allorigins.win/get?url=';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Система Титан активирована! 👑');
+        Lampa.Noty.show('Королева: Режим прорыва активен! 👑');
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.btn--queen').length) {
-                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c, #7b1fa2) !important; border-radius: 10px; margin-top:12px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">' +
-                        '<span style="font-weight:bold; font-size:1.2em; color: #fff;">Королева 👑</span></div>');
+                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #6a1b9a 0%, #ad1457 100%) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; box-shadow: 0 6px 20px rgba(0,0,0,0.5);">' +
+                        '<span style="font-weight:bold; font-size:1.2em; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('Королева: Взламываю шлюз Vega...');
-                        runTitanEngine(e.data.movie);
+                        Lampa.Noty.show('Королева: Ищу лазейку в Vega...');
+                        runQueen(e.data.movie);
                     });
                     
                     render.find('.view--torrent').after(btn);
@@ -27,51 +28,44 @@
         });
     }
 
-    function runTitanEngine(movie) {
-        var url = proxy + encodeURIComponent(base + '?id=' + movie.id + '&token=' + token + '&cb=' + Math.random());
+    function runQueen(movie) {
+        var url = proxy + encodeURIComponent(base + '?id=' + movie.id + '&token=' + token + '&cb=' + Date.now());
 
         var network = new Lampa.Reguest();
         network.native(url, function(result) {
             try {
-                // Пытаемся достать данные из любого формата (текст или объект)
-                var raw = typeof result === 'string' ? JSON.parse(result) : (result.contents ? (typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents) : result);
+                // Пытаемся достать данные даже если Vega их "помяла"
+                var raw = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
                 var items = raw.items || raw.playlist || raw;
 
-                if (items && Array.isArray(items) && items.length) {
-                    Lampa.Noty.show('Королева: Канал пробит! Выбирай.');
-                    
-                    // ОТКРЫВАЕМ СИСТЕМНОЕ ОКНО (Его невозможно обнулить)
+                if (items && items.length) {
                     Lampa.Select.show({
                         title: 'Королева: ' + movie.title,
                         items: items.map(function(i) {
                             return {
                                 title: i.title || i.name || 'Озвучка',
-                                subtitle: i.quality || i.voice || 'Нажми для запуска',
+                                subtitle: i.quality || 'Нажми для просмотра',
                                 url: i.video || i.file || i.link
                             };
                         }),
                         onSelect: function(item) {
-                            if (item.url) {
-                                Lampa.Player.run(item);
-                                Lampa.Player.playlist([item]);
-                            } else {
-                                Lampa.Noty.show('Королева: Ссылка на видео битая');
-                            }
+                            Lampa.Player.run(item);
+                            Lampa.Player.playlist([item]);
                         },
-                        onBack: function() {
-                            Lampa.Controller.toggle('full');
-                        }
+                        onBack: function() { Lampa.Controller.toggle('full'); }
                     });
                 } else {
-                    Lampa.Noty.show('Королева: Vega прислала пустой пакет');
+                    Lampa.Noty.show('Королева: Vega блокирует ответ (Empty)');
                 }
             } catch(e) {
-                Lampa.Noty.show('Королева: Ошибка разбора данных');
+                Lampa.Noty.show('Королева: Ошибка связи (DPI)');
             }
         }, function() {
-            Lampa.Noty.show('Королева: Vega заблокировала шлюз полностью');
+            Lampa.Noty.show('Королева: Канал заблокирован провайдером');
         });
     }
 
     var wait = setInterval(function() {
-        if (window && window.Lampa) { clearInterval(wait); start
+        if (window && window.Lampa) { clearInterval(wait); startPlugin(); }
+    }, 500);
+})();
