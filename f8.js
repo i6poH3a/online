@@ -1,15 +1,14 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v24.0 Select-Mode)
+    // Lampa Plugin: i6poH3a "Королева" (v25.0)
     var token = 'f8lgdpq2';
-    var proxy = 'https://api.allorigins.win/get?url=';
     var base  = 'https://lampac.hdgo.me/lite/events';
+    var proxy = 'https://api.allorigins.win/get?url=';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Система меню готова! 👑');
-
-        // Создаем кнопку "Королева" в карточке фильма
+        
+        // Кнопка в карточке фильма
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
@@ -18,8 +17,38 @@
                         '<span style="font-weight:bold;">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        // При нажатии сразу запускаем поиск и показываем меню
-                        openQueenMenu(e.data.movie);
+                        Lampa.Noty.show('Королева: Пробиваюсь сквозь Vega...');
+                        
+                        var url = proxy + encodeURIComponent(base + '?id=' + e.data.movie.id + '&token=' + token + '&cb=' + Date.now());
+
+                        // Используем системный запрос Lampa
+                        var network = new Lampa.Reguest();
+                        network.native(url, function(result) {
+                            try {
+                                var data = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
+                                
+                                if (data && data.length) {
+                                    // ОТКРЫВАЕМ СИСТЕМНОЕ МЕНЮ ВЫБОРА
+                                    Lampa.Select.show({
+                                        title: 'Выбор озвучки (Королева)',
+                                        items: data,
+                                        onSelect: function(item) {
+                                            Lampa.Player.run(item);
+                                            Lampa.Player.playlist([item]);
+                                        },
+                                        onBack: function() {
+                                            Lampa.Controller.toggle('full');
+                                        }
+                                    });
+                                } else {
+                                    Lampa.Noty.show('Королева: Vega блокирует ответ (Пусто)');
+                                }
+                            } catch(err) {
+                                Lampa.Noty.show('Королева: Ошибка шлюза');
+                            }
+                        }, function() {
+                            Lampa.Noty.show('Королева: Vega полностью закрыла проход');
+                        });
                     });
                     
                     render.find('.view--torrent').after(btn);
@@ -28,51 +57,11 @@
         });
     }
 
-    function openQueenMenu(movie) {
-        Lampa.Noty.show('Королева: Ищу переводы...');
-        
-        var target = base + '?id=' + movie.id + '&token=' + token + '&cb=' + Date.now();
-        var url    = proxy + encodeURIComponent(target);
-
-        $.ajax({
-            url: url,
-            method: 'GET',
-            dataType: 'json',
-            success: function(result) {
-                try {
-                    var data = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
-                    
-                    if (data && data.length) {
-                        // ВМЕСТО ЭКРАНА - ОТКРЫВАЕМ ВЫБОР (SELECT)
-                        Lampa.Select.show({
-                            title: 'Выбор озвучки (Королева)',
-                            items: data,
-                            onSelect: function(item) {
-                                // Запуск видео
-                                Lampa.Player.run(item);
-                                Lampa.Player.playlist([item]);
-                            },
-                            onBack: function() {
-                                Lampa.Controller.toggle('full');
-                            }
-                        });
-                    } else {
-                        Lampa.Noty.show('Королева: Ничего не найдено (DPI Vega)');
-                    }
-                } catch(e) {
-                    Lampa.Noty.show('Королева: Ошибка связи с сервером');
-                }
-            },
-            error: function() {
-                Lampa.Noty.show('Королева: Провайдер Vega заблокировал шлюз');
-            }
-        });
-    }
-
-    if (window.Lampa) startPlugin();
-    else {
-        var wait = setInterval(function() {
-            if (window.Lampa) { clearInterval(wait); startPlugin(); }
-        }, 500);
-    }
+    // Запуск
+    var wait = setInterval(function() {
+        if (window && window.Lampa) {
+            clearInterval(wait);
+            startPlugin();
+        }
+    }, 500);
 })();
