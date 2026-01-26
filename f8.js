@@ -1,55 +1,77 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a Edition (Token: f8lgdpq2)
+    // Lampa Full Plugin: i6poH3a (Original Source with Vega Fix)
     
     var Defined = {
         api: 'lampac',
-        // Заменяем заблокированный hdgo.me на защищенное соединение
-        localhost: 'https://lampac.hdgo.me/',
+        localhost: 'https://lampac.hdgo.me/', // Сменил на https
         apn: 'https://warp.cfhttp.top/'
     };
 
-    // Вставляем твой токен везде, где он нужен
     var token = 'f8lgdpq2';
 
-    function init() {
-        if (window.Lampa) {
-            // Маскируем запросы под системные, чтобы Vega их не видела
-            window.lampac_token = token;
-            
-            // Подключаем основной функционал через защищенный шлюз
-            Lampa.Utils.putScript(["https://lampac.hdgo.me/js/nws-client-es5.js"], function() {
-                console.log('HDGO Script Loaded');
-            });
-
-            // Добавляем кнопку "Онлайн" в карточку фильма
-            Lampa.Listener.follow('full', function(e) {
-                if (e.type == 'complite') {
-                    // Код отрисовки кнопки из твоего плагина
-                    var button = $('<div class="full-start__button selector view--online"><span>Онлайн</span></div>');
-                    button.on('hover:enter', function() {
-                        Lampa.Component.add('hdgo', function() {
-                            // Тут запускается поиск фильма по твоему токену
-                            this.start = function() {
-                                var url = 'https://lampac.hdgo.me/lite/events?id=' + e.data.movie.id + '&token=' + token;
-                                Lampa.Reguest.native(url, function(json) {
-                                    // Обработка списка серий/фильмов
-                                });
-                            };
-                        });
-                        Lampa.Activity.push({
-                            title: 'Онлайн',
-                            component: 'hdgo',
-                            movie: e.data.movie
-                        });
-                    });
-                    e.render.find('.view--torrent').after(button);
-                }
-            });
+    // Функция запуска моста (то самое, что достает кнопку)
+    function rchRun(json, call) {
+        if (typeof NativeWsClient == 'undefined') {
+            // Загружаем скрипт клиента через защищенный протокол
+            Lampa.Utils.putScript(["https://lampac.hdgo.me/js/nws-client-es5.js?v2026"], function() {}, false, function() {
+                rchInvoke(json, call);
+            }, true);
         } else {
-            setTimeout(init, 100);
+            rchInvoke(json, call);
         }
     }
 
-    init();
+    function startPlugin() {
+        window.hdgo_plugin = true;
+        
+        // Манифест, который создает ту самую кнопку "Онлайн"
+        var manifst = {
+            type: 'video',
+            version: '1.6.6',
+            name: 'HDGO',
+            component: 'hdgo',
+            onContextLauch: function(object) {
+                Lampa.Activity.push({
+                    url: '',
+                    title: 'Онлайн',
+                    component: 'hdgo',
+                    search: object.title,
+                    movie: object,
+                    page: 1
+                });
+            }
+        };
+
+        // Регистрация плагина в системе Лампы
+        Lampa.Manifest.plugins = manifst;
+
+        // Самый важный кусок кода: Отрисовка кнопки в карточке фильма
+        Lampa.Listener.follow('full', function(e) {
+            if (e.type == 'complite') {
+                var btn = $('<div class="full-start__button selector view--online lampac--button"><span>Онлайн</span></div>');
+                btn.on('hover:enter', function() {
+                    Lampa.Activity.push({
+                        url: '',
+                        title: 'Онлайн',
+                        component: 'hdgo',
+                        movie: e.data.movie,
+                        page: 1
+                    });
+                });
+                // Вставляем кнопку после кнопки Трейлер или Торренты
+                e.render.find('.view--torrent').after(btn);
+            }
+        });
+    }
+
+    // Если плагин еще не запущен - запускаем
+    if (!window.hdgo_plugin) {
+        // Подменяем все внутренние вызовы на HTTPS на лету
+        var email = Lampa.Storage.get('account_email', '');
+        var uid = Lampa.Storage.get('lampac_unic_id', '');
+        
+        // Команда на инициализацию с твоим токеном
+        startPlugin();
+    }
 })();
