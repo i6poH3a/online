@@ -1,23 +1,22 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Моя Королева" (v50.0 O.D.)
+    // Lampa Plugin: i6poH3a "Моя Королева" (v51.0 O.D.)
     var api_url = 'http://api.spotfy.biz/lam/f8lgdpq2';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Моя Королева: Слушаю и повинуюсь 👑');
+        Lampa.Noty.show('Моя Королева: К службе готова 👑');
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.btn--queen').length) {
                     
-                    // Кнопка в стиле О.Д. (Царский фиолетовый)
-                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c 0%, #311b92 100%) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; border: 1px solid #7b1fa2; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">' +
+                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c 0%, #311b92 100%) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; border: 1px solid #7b1fa2;">' +
                         '<span style="font-weight:bold; font-size:1.1em; color: #fff; text-transform: uppercase; letter-spacing: 2px;">Моя Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('О.Д.: Загружаю переводы...');
+                        Lampa.Noty.show('О.Д.: Запрашиваю переводы...');
                         loadData(e.data.movie);
                     });
                     
@@ -28,39 +27,47 @@
     }
 
     function loadData(movie) {
-        // Формируем прямую ссылку без лишних прокси
         var id = movie.imdb_id || movie.id;
-        var url = api_url + '?id=' + id;
+        var fetch_url = api_url + '?id=' + id;
 
+        // Используем универсальный метод запроса Lampa для обхода блокировок
         var network = new Lampa.Reguest();
-        network.native(url, function(result) {
+        network.native(fetch_url, function(result) {
             try {
-                // Прямой разбор данных из твоего API
-                var items = result.items || result.playlist || result;
+                // Если API возвращает массив или объект с полем items/playlist
+                var items = result.items || result.playlist || (Array.isArray(result) ? result : false);
 
-                if (items && Array.isArray(items) && items.length) {
+                if (items && items.length) {
+                    var formatted = items.map(function(i) {
+                        return {
+                            title: i.title || i.name || 'Озвучка О.Д.',
+                            subtitle: i.quality || 'HD',
+                            url: i.video || i.file || i.link
+                        };
+                    });
+
+                    // Выводим красивое меню выбора
                     Lampa.Select.show({
-                        title: 'Озвучка — О.Д.',
-                        items: items.map(function(i) {
-                            return {
-                                title: i.title || i.name || 'Смотреть',
-                                subtitle: i.quality || 'HD',
-                                url: i.video || i.file || i.link
-                            };
-                        }),
+                        title: 'Озвучка — Моя Королева',
+                        items: formatted,
                         onSelect: function(item) {
-                            Lampa.Player.run(item);
-                            Lampa.Player.playlist([item]);
+                            if (item.url) {
+                                Lampa.Player.run(item);
+                                Lampa.Player.playlist([item]);
+                            } else {
+                                Lampa.Noty.show('О.Д.: Ссылка не найдена');
+                            }
                         },
                         onBack: function() { Lampa.Controller.toggle('full'); }
                     });
                 } else {
-                    Lampa.Noty.show('О.Д.: В API пока пусто по этому ID');
+                    Lampa.Noty.show('О.Д.: В API пусто (Нет данных)');
                 }
             } catch(e) {
-                Lampa.Noty.show('О.Д.: Ошибка формата данных API');
+                Lampa.Noty.show('О.Д.: Ошибка структуры данных API');
             }
         }, function() {
+            // Если сервер не отвечает (как на твоем скрине)
             Lampa.Noty.show('О.Д.: Сервер api.spotfy.biz не ответил');
         });
     }
