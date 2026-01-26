@@ -1,10 +1,9 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v7.0 DNS-DPI Bypass)
     var token = 'f8lgdpq2';
-    // Используем альтернативный шлюз и зеркало
-    var gateway = 'https://api.allorigins.win/get?url=';
-    var mirror  = 'https://lampa.stream/proxy/https://lampac.hdgo.me/lite/events';
+    // Используем максимально стабильный шлюз-декодер
+    var proxy = 'https://api.allorigins.win/get?url=';
+    var base  = 'https://lampac.hdgo.me/lite/events';
 
     function startPlugin() {
         window.hdgo_plugin = true;
@@ -17,27 +16,29 @@
             this.create = function() {
                 Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
                 
-                // Формируем запрос к альтернативному зеркалу
-                var target = mirror + '?id=' + object.movie.id + '&token=' + token;
-                var finalUrl = gateway + encodeURIComponent(target);
+                var target = base + '?id=' + object.movie.id + '&token=' + token;
+                var finalUrl = proxy + encodeURIComponent(target) + '&callback=' + Math.random();
+
+                Lampa.Noty.show('Королева: Запрос отправлен...');
 
                 network.native(finalUrl, function(result) {
                     try {
-                        // Распаковываем данные из прокси
-                        var data = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
+                        // AllOrigins возвращает данные в поле .contents как строку
+                        var rawData = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
                         
-                        if (data && data.length) {
-                            Lampa.Noty.show('Королева: Связь установлена!');
-                            files.append(data);
+                        if (rawData && rawData.length) {
+                            Lampa.Noty.show('Королева: Данные получены!');
+                            files.append(rawData);
                             _this.start();
                         } else {
-                            Lampa.Noty.show('Королева: На этом канале пусто');
+                            Lampa.Noty.show('Королева: Сервер вернул пустоту');
                         }
                     } catch(e) {
-                        Lampa.Noty.show('Королева: Ошибка разбора данных');
+                        Lampa.Noty.show('Королева: Ошибка декодера');
+                        console.log('Decode error:', e);
                     }
                 }, function() {
-                    Lampa.Noty.show('Королева: Vega блокирует канал');
+                    Lampa.Noty.show('Королева: Vega блокирует шлюз (Смени DNS!)');
                 });
 
                 return files.render();
@@ -50,7 +51,6 @@
                         Lampa.Controller.collectionSet(files.render());
                         Lampa.Controller.collectionFocus(files.render().find('.selector').eq(0), files.render());
                     },
-                    left: function() { Lampa.Activity.backward(); },
                     back: function() { Lampa.Activity.backward(); }
                 });
                 Lampa.Controller.toggle('content');
