@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Моя Королева" (v49.0 O.D.)
+    // Lampa Plugin: i6poH3a "Моя Королева" (v50.0 O.D.)
     var api_url = 'http://api.spotfy.biz/lam/f8lgdpq2';
 
     function startPlugin() {
@@ -12,8 +12,8 @@
                 var render = e.object.activity.render();
                 if (!render.find('.btn--queen').length) {
                     
-                    // Кнопка в стиле О.Д.
-                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c 0%, #311b92 100%) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; border: 1px solid #7b1fa2;">' +
+                    // Кнопка в стиле О.Д. (Царский фиолетовый)
+                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c 0%, #311b92 100%) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; border: 1px solid #7b1fa2; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">' +
                         '<span style="font-weight:bold; font-size:1.1em; color: #fff; text-transform: uppercase; letter-spacing: 2px;">Моя Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
@@ -28,12 +28,14 @@
     }
 
     function loadData(movie) {
+        // Формируем прямую ссылку без лишних прокси
         var id = movie.imdb_id || movie.id;
         var url = api_url + '?id=' + id;
 
         var network = new Lampa.Reguest();
         network.native(url, function(result) {
             try {
+                // Прямой разбор данных из твоего API
                 var items = result.items || result.playlist || result;
 
                 if (items && Array.isArray(items) && items.length) {
@@ -53,13 +55,13 @@
                         onBack: function() { Lampa.Controller.toggle('full'); }
                     });
                 } else {
-                    Lampa.Noty.show('О.Д.: В API пока ничего нет');
+                    Lampa.Noty.show('О.Д.: В API пока пусто по этому ID');
                 }
             } catch(e) {
-                Lampa.Noty.show('О.Д.: Ошибка ответа сервера');
+                Lampa.Noty.show('О.Д.: Ошибка формата данных API');
             }
         }, function() {
-            Lampa.Noty.show('О.Д.: Сервер api.spotfy.biz недоступен');
+            Lampa.Noty.show('О.Д.: Сервер api.spotfy.biz не ответил');
         });
     }
 
