@@ -2,17 +2,28 @@
   'use strict';
   var Defined = {
     api: 'lampac',
-    // Сменил на https, чтобы Vega не видела содержимое
+    // Обязательно https!
     localhost: 'https://lampac.hdgo.me/', 
     apn: 'https://warp.cfhttp.top/'
   };
   
-  // Твой токен уже здесь
-  var token = 'f8lgdpq2'; 
-
-  // Я изменил все внутренние вызовы на защищенный протокол
+  // Все системные ссылки внутри тоже меняем на https
   var hostkey = 'lampac.hdgo.me';
   
-  // Весь остальной твой код... (просто скопируй свой текст, но ВЕЗДЕ замени http:// на https://)
-  // Это запутает фильтр провайдера.
+  // Твой токен
+  var token = 'f8lgdpq2'; 
+
+  // В этой строке я тоже заменил http на https
+  function rchRun(json, call) {
+    if (typeof NativeWsClient == 'undefined') {
+      Lampa.Utils.putScript(["https://lampac.hdgo.me/js/nws-client-es5.js?v18112025"], function() {}, false, function() {
+        rchInvoke(json, call);
+      }, true);
+    } else {
+      rchInvoke(json, call);
+    }
+  }
+  
+  // ... дальше вставь остаток своего кода, НО проверь через поиск (Ctrl+F), 
+  // чтобы нигде не осталось "http://lampac.hdgo.me" — везде должно быть "https"
 })();
