@@ -1,44 +1,72 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" Edition (v1.7.5)
+    // Lampa Plugin: i6poH3a "Королева" (Fixed Render)
     var token = 'f8lgdpq2';
-    // Прокси, который протащит данные через фильтры Vega
     var proxy = 'https://api.allorigins.win/raw?url=';
     var base  = 'https://lampac.hdgo.me/';
 
     function startPlugin() {
         window.hdgo_plugin = true;
 
+        // Регистрируем компонент правильно, чтобы не было ошибки render
         Lampa.Component.add('hdgo', function(object) {
             var network = new Lampa.Reguest();
             var scroll  = new Lampa.Scroll({mask: true, over: true});
             var files   = new Lampa.Explorer(object);
-            
-            this.create = function() { return files.render(); };
+            var last;
 
-            this.start = function() {
+            this.create = function() {
                 var _this = this;
+                // Фоновое изображение
                 Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
                 
-                // Формируем секретный запрос через прокси-шлюз
                 var url = base + 'lite/events?id=' + object.movie.id + '&token=' + token;
                 var proxiedUrl = proxy + encodeURIComponent(url);
 
                 network.native(proxiedUrl, function(json) {
                     if (json && json.length) {
-                        // Если данные пришли - рисуем список фильмов
                         Lampa.Noty.show('Королева нашла видео!');
-                        files.append(json); // Вот эта строка наполняет экран!
+                        files.append(json);
+                        _this.start();
                     } else {
-                        Lampa.Noty.show('Королева: Сервер пуст или заблокирован');
+                        Lampa.Noty.show('Королева: Видео не найдено');
                     }
                 }, function() {
-                    Lampa.Noty.show('Королева: Ошибка связи (Vega DPI)');
+                    Lampa.Noty.show('Королева: Ошибка сети');
                 });
+
+                return files.render();
+            };
+
+            // Тот самый метод, которого не хватало!
+            this.render = function() {
+                return files.render();
+            };
+
+            this.start = function() {
+                last = scroll.render().find('.selector').eq(0);
+                Lampa.Controller.add('content', {
+                    toggle: function() {
+                        Lampa.Controller.collectionSet(scroll.render());
+                        Lampa.Controller.collectionFocus(last, scroll.render());
+                    },
+                    left: function() { Lampa.Controller.toggle('menu'); },
+                    up: function() { Lampa.Controller.toggle('head'); },
+                    back: function() { Lampa.Activity.backward(); }
+                });
+                Lampa.Controller.toggle('content');
+            };
+
+            this.pause = function() {};
+            this.stop = function() {};
+            this.destroy = function() {
+                network.clear();
+                scroll.destroy();
+                files.destroy();
             };
         });
 
-        // Та самая крутая кнопка "Королева"
+        // Отрисовка кнопки "Королева"
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
@@ -64,14 +92,11 @@
         });
     }
 
-    if (window.Lampa && Lampa.Component) {
-        startPlugin();
-    } else {
-        var timer = setInterval(function() {
-            if (window.Lampa && Lampa.Component) {
-                clearInterval(timer);
-                startPlugin();
-            }
-        }, 100);
-    }
+    // Запуск с ожиданием готовности системы
+    var waitLampa = setInterval(function() {
+        if (window.Lampa && Lampa.Component) {
+            clearInterval(waitLampa);
+            startPlugin();
+        }
+    }, 100);
 })();
