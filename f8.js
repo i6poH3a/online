@@ -1,25 +1,26 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Моя Королева" (v46.0 Platinum)
-    // Твой личный API адрес
+    // Lampa Plugin: i6poH3a "Моя Королева" (v48.0 O.D.)
     var my_api = 'http://api.spotfy.biz/lam/f8lgdpq2';
-    var proxy  = 'https://api.allorigins.win/get?url='; // Шлюз для обхода блокировок
+    // Технический мост для работы HTTP ссылки на HTTPS сайте
+    var bridge = 'https://api.allorigins.win/get?url=';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Моя Королева: К службе готова! 👑');
+        Lampa.Noty.show('Моя Королева: К службе готова! 👑 О.Д.');
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.btn--queen').length) {
-                    // Создаем кнопку в стиле "Королева"
-                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c 0%, #880e4f 100%) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; box-shadow: 0 4px 20px rgba(123, 31, 162, 0.5); border: 1px solid #ce93d8;">' +
-                        '<span style="font-weight:bold; font-size:1.2em; color: #fff; text-transform: uppercase; letter-spacing: 1.5px;">Моя Королева 👑</span></div>');
+                    
+                    // Кнопка в королевском стиле
+                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c 0%, #311b92 100%) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; border: 1px solid #7b1fa2; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">' +
+                        '<span style="font-weight:bold; font-size:1.1em; color: #fff; text-transform: uppercase; letter-spacing: 2px;">Моя Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('Королева: Ищу лучшее для Вас...');
-                        runQueenLogic(e.data.movie);
+                        Lampa.Noty.show('О.Д.: Загружаю переводы...');
+                        runQueen(e.data.movie);
                     });
                     
                     render.find('.view--torrent').after(btn);
@@ -28,25 +29,24 @@
         });
     }
 
-    function runQueenLogic(movie) {
-        // Формируем запрос к твоему личному API
-        var targetUrl = my_api + '?id=' + (movie.imdb_id || movie.id) + '&cb=' + Math.random();
-        var finalUrl  = proxy + encodeURIComponent(targetUrl);
+    function runQueen(movie) {
+        // Прямой запрос к твоему API через технический мост
+        var id = movie.imdb_id || movie.id;
+        var url = bridge + encodeURIComponent(my_api + '?id=' + id);
 
         var network = new Lampa.Reguest();
-        network.native(finalUrl, function(result) {
+        network.native(url, function(result) {
             try {
-                // Разбор ответа от spotfy.biz
-                var res = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
+                var res = (typeof result.contents === 'string') ? JSON.parse(result.contents) : result.contents;
                 var items = res.items || res.playlist || res;
 
-                if (items && items.length) {
+                if (items && Array.isArray(items) && items.length) {
                     Lampa.Select.show({
-                        title: 'Моя Королева: ' + movie.title,
+                        title: 'Выбор озвучки — О.Д.',
                         items: items.map(function(i) {
                             return {
-                                title: i.title || i.name || 'Вариант озвучки',
-                                subtitle: i.quality || 'Качество HD',
+                                title: i.title || i.name || 'Смотреть',
+                                subtitle: i.quality || 'HD',
                                 url: i.video || i.file || i.link
                             };
                         }),
@@ -54,14 +54,18 @@
                             Lampa.Player.run(item);
                             Lampa.Player.playlist([item]);
                         },
-                        onBack: function() {
-                            Lampa.Controller.toggle('full');
-                        }
+                        onBack: function() { Lampa.Controller.toggle('full'); }
                     });
                 } else {
-                    Lampa.Noty.show('Королева: В Вашем API пока пусто по этому фильму');
+                    Lampa.Noty.show('О.Д.: В API пусто по этому фильму');
                 }
             } catch(e) {
-                Lampa.Noty.show('Королева: Vega блокирует Ваш личный канал');
+                Lampa.Noty.show('О.Д.: Ошибка связи с сервером');
             }
-        }, function
+        });
+    }
+
+    var wait = setInterval(function() {
+        if (window && window.Lampa) { clearInterval(wait); startPlugin(); }
+    }, 500);
+})();
