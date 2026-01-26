@@ -1,13 +1,13 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v20.0 Juggernaut)
+    // Lampa Plugin: i6poH3a "Королева" (v21.0 Monolith)
     var token = 'f8lgdpq2';
-    var base  = 'https://lampac.hdgo.me/lite/events';
     var proxy = 'https://api.allorigins.win/raw?url=';
+    var base  = 'https://lampac.hdgo.me/lite/events';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Версия 20.0 готова! 👑');
+        Lampa.Noty.show('Королева: Взлом системы Vega... 👑');
 
         Lampa.Component.add('hdgo', function(object) {
             var network = new Lampa.Reguest();
@@ -16,31 +16,32 @@
             var _this   = this;
 
             this.create = function() {
-                Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
+                // ПРИНУДИТЕЛЬНАЯ ОТРИСОВКА (Даже если нет сети)
+                var items = [{
+                    title: '🛰 Статус: Проверка канала Vega...',
+                    quality: 'LOG',
+                    info: 'Ждем ответ от сервера через прокси'
+                }];
                 
-                // ТЕСТОВАЯ КНОПКА (Должна быть видна СРАЗУ)
-                files.append([{
-                    title: '🛰 Канал связи Vega проверяется...',
-                    quality: 'INFO',
-                    info: 'Если ты видишь эту надпись, значит код работает!'
-                }]);
+                Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
+                files.append(items);
 
-                var targetUrl = base + '?id=' + object.movie.id + '&token=' + token;
-                var finalUrl  = proxy + encodeURIComponent(targetUrl);
+                // Пытаемся пробить блокировку
+                var target = base + '?id=' + object.movie.id + '&token=' + token + '&cb=' + Math.random();
+                var finalUrl = proxy + encodeURIComponent(target);
 
-                // Запрос данных
                 network.native(finalUrl, function(json) {
                     files.clear();
                     if (json && json.length) {
                         Lampa.Noty.show('Королева: Есть пробитие!');
                         files.append(json);
                     } else {
-                        files.append([{title: '❌ Vega обрезала ответ (пусто)', quality: 'DPI'}]);
+                        files.append([{title: '❌ Vega обнулила данные (Пусто)', quality: 'DPI'}]);
                     }
                     _this.start();
                 }, function() {
                     files.clear();
-                    files.append([{title: '❌ Ошибка: Vega блокирует шлюз', quality: 'BLOCK'}]);
+                    files.append([{title: '❌ Vega заблокировала шлюз AllOrigins', quality: 'BLOCK'}]);
                     _this.start();
                 });
 
@@ -64,12 +65,12 @@
             this.destroy = function() { network.clear(); scroll.destroy(); files.destroy(); };
         });
 
-        // Кнопка в карточке фильма
+        // Создание фиолетовой кнопки
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.lampac--button').length) {
-                    var btn = $('<div class="full-start__button selector view--online lampac--button" style="background: #7b1fa2 !important; border-radius: 8px; margin-top:10px; display:flex; align-items:center; justify-content:center; height:3.5em;">' +
+                    var btn = $('<div class="full-start__button selector view--online lampac--button" style="background: #7b1fa2 !important; border-radius: 8px; margin-top:10px; display:flex; align-items:center; justify-content:center; height:3.5em; width:100%">' +
                         '<span style="font-weight:bold;">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
