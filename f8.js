@@ -1,12 +1,11 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Моя Королева" (v54.0)
-    var api_1 = 'http://api.spotfy.biz/lam/f8lgdpq2';
-    var api_2 = 'http://api.forkplay.me/lam/f8lgdpq2';
+    // Lampa Plugin: i6poH3a "Моя Королева" (v56.0)
+    var api_url = 'http://api.spotfy.biz/lam/f8lgdpq2';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Моя Королева: К службе готова 👑');
+        Lampa.Noty.show('Моя Королева: Слушаю и повинуюсь 👑');
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
@@ -19,51 +18,43 @@
                     btn.on('hover:enter', function() {
                         Lampa.Noty.show('О.Д.: Загружаю переводы...');
                         
+                        // Формируем ссылку точно так же, как ты вводил вручную
                         var id = e.data.movie.imdb_id || e.data.movie.id;
-                        // Пробуем первый API
-                        sendRequest(api_1 + '?id=' + id, e.data.movie);
+                        var final_url = api_url + '?id=' + id;
+
+                        // Используем системный загрузчик, который работает "напрямую"
+                        $.ajax({
+                            url: final_url,
+                            method: 'GET',
+                            dataType: 'json',
+                            success: function(data) {
+                                var items = data.items || data.playlist || (Array.isArray(data) ? data : []);
+                                if (items.length) {
+                                    Lampa.Select.show({
+                                        title: 'Озвучка — Моя Королева',
+                                        items: items.map(function(i) {
+                                            return {
+                                                title: i.title || i.name || 'Смотреть',
+                                                subtitle: i.quality || 'HD',
+                                                url: i.video || i.file || i.link
+                                            };
+                                        }),
+                                        onSelect: function(item) {
+                                            Lampa.Player.run(item);
+                                            Lampa.Player.playlist([item]);
+                                        }
+                                    });
+                                } else {
+                                    Lampa.Noty.show('О.Д.: В API пусто');
+                                }
+                            },
+                            error: function() {
+                                Lampa.Noty.show('О.Д.: Ошибка загрузки списка');
+                            }
+                        });
                     });
                     
                     render.find('.view--torrent').after(btn);
-                }
-            }
-        });
-    }
-
-    function sendRequest(url, movie) {
-        $.ajax({
-            url: url,
-            method: 'GET',
-            dataType: 'json',
-            success: function(data) {
-                var items = data.items || data.playlist || (Array.isArray(data) ? data : []);
-                if (items.length) {
-                    Lampa.Select.show({
-                        title: 'Озвучка — Моя Королева',
-                        items: items.map(function(i) {
-                            return {
-                                title: i.title || i.name || 'Смотреть',
-                                subtitle: i.quality || 'HD',
-                                url: i.video || i.file || i.link
-                            };
-                        }),
-                        onSelect: function(item) {
-                            Lampa.Player.run(item);
-                            Lampa.Player.playlist([item]);
-                        }
-                    });
-                } else {
-                    Lampa.Noty.show('О.Д.: В API пусто');
-                }
-            },
-            error: function() {
-                // Если первый сдох, пробуем второй (forkplay)
-                if (url.indexOf('spotfy') !== -1) {
-                    Lampa.Noty.show('О.Д.: spotfy не ответил, пробую forkplay...');
-                    var id = movie.imdb_id || movie.id;
-                    sendRequest(api_2 + '?id=' + id, movie);
-                } else {
-                    Lampa.Noty.show('О.Д.: Оба сервера молчат. Проверь DNS!');
                 }
             }
         });
