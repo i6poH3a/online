@@ -1,14 +1,14 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v25.0)
+    // Lampa Plugin: i6poH3a "Королева" (v26.0 Final UI)
     var token = 'f8lgdpq2';
     var base  = 'https://lampac.hdgo.me/lite/events';
     var proxy = 'https://api.allorigins.win/get?url=';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        
-        // Кнопка в карточке фильма
+        Lampa.Noty.show('Королева: Проверка связи с Vega... 👑');
+
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
@@ -17,37 +17,51 @@
                         '<span style="font-weight:bold;">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('Королева: Пробиваюсь сквозь Vega...');
+                        Lampa.Noty.show('Королева: Взлом DPI...');
                         
                         var url = proxy + encodeURIComponent(base + '?id=' + e.data.movie.id + '&token=' + token + '&cb=' + Date.now());
 
-                        // Используем системный запрос Lampa
-                        var network = new Lampa.Reguest();
-                        network.native(url, function(result) {
-                            try {
-                                var data = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
-                                
-                                if (data && data.length) {
-                                    // ОТКРЫВАЕМ СИСТЕМНОЕ МЕНЮ ВЫБОРА
-                                    Lampa.Select.show({
-                                        title: 'Выбор озвучки (Королева)',
-                                        items: data,
-                                        onSelect: function(item) {
-                                            Lampa.Player.run(item);
-                                            Lampa.Player.playlist([item]);
-                                        },
-                                        onBack: function() {
-                                            Lampa.Controller.toggle('full');
-                                        }
-                                    });
-                                } else {
-                                    Lampa.Noty.show('Королева: Vega блокирует ответ (Пусто)');
+                        // СНАЧАЛА ОТКРЫВАЕМ МЕНЮ, ЧТОБЫ НЕ БЫЛО ПУСТОТЫ
+                        Lampa.Select.show({
+                            title: 'Королева: Выбор озвучки',
+                            items: [
+                                {
+                                    title: '⏳ Идет загрузка данных...',
+                                    subtitle: 'Пробиваем блокировку Vega',
+                                    quality: 'DPI'
+                                },
+                                {
+                                    title: '⚙️ Настройки DNS',
+                                    subtitle: 'Если пусто - проверь DNS 1.1.1.1',
+                                    quality: 'INFO'
                                 }
-                            } catch(err) {
-                                Lampa.Noty.show('Королева: Ошибка шлюза');
+                            ],
+                            onSelect: function(item) {
+                                if (item.quality !== 'DPI' && item.quality !== 'INFO') {
+                                    Lampa.Player.run(item);
+                                    Lampa.Player.playlist([item]);
+                                }
                             }
-                        }, function() {
-                            Lampa.Noty.show('Королева: Vega полностью закрыла проход');
+                        });
+
+                        // А теперь в фоне заменяем список реальными данными
+                        $.ajax({
+                            url: url,
+                            method: 'GET',
+                            dataType: 'json',
+                            success: function(result) {
+                                try {
+                                    var data = typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents;
+                                    if (data && data.length) {
+                                        Lampa.Noty.show('Королева: Успех!');
+                                        Lampa.Select.update(data); // Обновляем меню живыми данными
+                                    } else {
+                                        Lampa.Noty.show('Королева: Vega обнулила ответ');
+                                    }
+                                } catch(err) {
+                                    Lampa.Noty.show('Королева: Ошибка шлюза');
+                                }
+                            }
                         });
                     });
                     
@@ -57,7 +71,6 @@
         });
     }
 
-    // Запуск
     var wait = setInterval(function() {
         if (window && window.Lampa) {
             clearInterval(wait);
