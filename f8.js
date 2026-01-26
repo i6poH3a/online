@@ -1,3 +1,4 @@
+// Lampa Plugin
 (function() {
   'use strict';
   var Defined = {
