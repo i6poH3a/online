@@ -1,87 +1,62 @@
 (function() {
-    'use strict';
-    // Lampa Plugin: HDGO i6poH3a (Token: f8lgdpq2)
-    
-    var Defined = {
-        api: 'lampac',
-        localhost: 'https://lampac.hdgo.me/', // Исправлено на HTTPS
-        apn: 'https://warp.cfhttp.top/'
-    };
+  'use strict';
+  // Lampa Plugin: i6poH3a "Королева" Edition
+  var token = 'f8lgdpq2';
+  var proxy = 'https://api.allorigins.win/raw?url=';
+  var base  = 'https://lampac.hdgo.me/';
 
-    var token = 'f8lgdpq2'; // Твой токен
-
-    // Эта функция ищет фильмы и создает список
-    function rchRun(json, call) {
-        if (typeof NativeWsClient == 'undefined') {
-            Lampa.Utils.putScript(["https://lampac.hdgo.me/js/nws-client-es5.js"], function() {}, false, function() {
-                rchInvoke(json, call);
-            }, true);
-        } else {
-            rchInvoke(json, call);
-        }
-    }
-
-    function startPlugin() {
-        window.hdgo_plugin = true;
+  function init() {
+    if (window.Lampa) {
+      Lampa.Component.add('hdgo', function(object) {
+        var network = new Lampa.Reguest();
+        var files   = new Lampa.Explorer(object);
         
-        // Манифест кнопки "Онлайн"
-        var manifst = {
-            type: 'video',
-            version: '1.6.6',
-            name: 'HDGO',
-            component: 'hdgo',
-            onContextLauch: function(object) {
-                Lampa.Activity.push({
-                    url: '',
-                    title: 'Онлайн',
-                    component: 'hdgo',
-                    search: object.title,
-                    movie: object,
-                    page: 1
-                });
+        this.create = function() { return files.render(); };
+
+        this.start = function() {
+          var _this = this;
+          Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
+          
+          // Магический запрос через прокси-шлюз
+          var url = base + 'lite/events?id=' + object.movie.id + '&token=' + token;
+          var proxiedUrl = proxy + encodeURIComponent(url);
+
+          network.native(proxiedUrl, function(json) {
+            if (json && json.length) {
+              // Если сервер ответил - показываем список
+              Lampa.Noty.show('Королева нашла фильмы!');
+              // (Здесь должна быть отрисовка списка, но для начала проверим коннект)
+            } else {
+              Lampa.Noty.show('Поиск не дал результатов (Vega всё еще сопротивляется)');
             }
+          }, function() {
+            Lampa.Noty.show('Ошибка заклинания (Сеть заблокирована)');
+          });
         };
+      });
 
-        Lampa.Manifest.plugins = manifst;
-
-        // Создание кнопки в карточке фильма
-        Lampa.Listener.follow('full', function(e) {
-            if (e.type == 'complite') {
-                // Пытаемся найти место после кнопки Трейлер или Торренты
-                var render = e.object.activity.render();
-                var torrent_btn = render.find('.view--torrent');
-                
-                if (!render.find('.lampac--button').length) {
-                    var btn = $('<div class="full-start__button selector view--online lampac--button"><span>Онлайн</span></div>');
-                    
-                    btn.on('hover:enter', function() {
-                        Lampa.Activity.push({
-                            url: '',
-                            title: 'Онлайн',
-                            component: 'hdgo',
-                            movie: e.data.movie,
-                            page: 1
-                        });
-                    });
-
-                    if (torrent_btn.length) torrent_btn.after(btn);
-                    else render.find('.full-start__buttons').append(btn);
-                }
-            }
-        });
-    }
-
-    // Запуск всего механизма
-    function init() {
-        if (window.Lampa) {
-            startPlugin();
-            // Подгружаем вспомогательные стили
-            Lampa.Template.add('hdgo_style', '<style>.view--online.lampac--button{background-color: #3535ff !important;}</style>');
-            $('body').append(Lampa.Template.get('hdgo_style', {}, true));
-        } else {
-            setTimeout(init, 100);
+      // Создаем ту самую кнопку "Королева"
+      Lampa.Listener.follow('full', function(e) {
+        if (e.type == 'complite') {
+          if (!e.render.find('.lampac--button').length) {
+            // Вот тут мы меняем название на "Королева"
+            var btn = $('<div class="full-start__button selector view--online lampac--button" style="background: #7b1fa2 !important;"><span>Королева</span></div>');
+            
+            btn.on('hover:enter', function() {
+              Lampa.Activity.push({
+                title: 'Королева', // Заголовок внутри тоже меняем
+                component: 'hdgo',
+                movie: e.data.movie
+              });
+            });
+            
+            // Вставляем кнопку после Торрентов
+            e.render.find('.view--torrent').after(btn);
+          }
         }
+      });
+    } else {
+      setTimeout(init, 100);
     }
-
-    init();
-})();
+  }
+  init
