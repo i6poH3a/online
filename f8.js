@@ -1,30 +1,29 @@
-// Lampa Plugin
 (function() {
   'use strict';
+  // Lampa Plugin i6poH3a
   var Defined = {
     api: 'lampac',
-    // Обязательно https!
-    localhost: 'https://lampac.hdgo.me/', 
+    localhost: 'https://lampac.hdgo.me/', // Сменил на HTTPS
     apn: 'https://warp.cfhttp.top/'
   };
   
-  // Все системные ссылки внутри тоже меняем на https
   var hostkey = 'lampac.hdgo.me';
-  
-  // Твой токен
-  var token = 'f8lgdpq2'; 
+  if (!window.rch_nws) window.rch_nws = {};
+  window.rch_nws[hostkey] = {
+    type: 'cors',
+    token: 'f8lgdpq2'
+  };
 
-  // В этой строке я тоже заменил http на https
+  // Исправленная функция загрузки скрипта
   function rchRun(json, call) {
     if (typeof NativeWsClient == 'undefined') {
-      Lampa.Utils.putScript(["https://lampac.hdgo.me/js/nws-client-es5.js?v18112025"], function() {}, false, function() {
+      Lampa.Utils.putScript(["https://lampac.hdgo.me/js/nws-client-es5.js?v26012026"], function() {}, false, function() {
         rchInvoke(json, call);
       }, true);
     } else {
       rchInvoke(json, call);
     }
   }
-  
-  // ... дальше вставь остаток своего кода, НО проверь через поиск (Ctrl+F), 
-  // чтобы нигде не осталось "http://lampac.hdgo.me" — везде должно быть "https"
+
+  // Весь остальной твой код... (просто убедись, что ссылки на hdgo.me теперь только через https)
 })();
