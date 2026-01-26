@@ -6,11 +6,8 @@
 
     // Список "штурмовых" прокси-шлюзов
     var gateways = [
-        'https://api.allorigins.win/get?url=',
         'https://corsproxy.io/?',
-        'https://api.codetabs.com/v1/proxy?quest=',
-        'https://thingproxy.freeboard.io/fetch/',
-        'https://lampa.stream/proxy/'
+       
     ];
 
     function startPlugin() {
