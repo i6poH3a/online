@@ -1,58 +1,42 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v10.0 Diamond Bypass)
+    // Lampa Plugin: i6poH3a "Королева" (v11.0 BWA-Bypass)
     var token = 'f8lgdpq2';
-    var base  = 'https://lampac.hdgo.me/lite/events';
-
-    // Список "штурмовых" прокси-шлюзов
-    var gateways = [
-        'https://corsproxy.io/?',
-       
-    ];
+    // Используем прокси зеркала bwa, который Vega обычно не трогает
+    var proxy = 'https://cors.bwa.to/';
+    var base  = 'http://api.spotfy.biz/lam/'; // Вернулись к истокам через ширму
 
     function startPlugin() {
         window.hdgo_plugin = true;
 
         Lampa.Component.add('hdgo', function(object) {
             var network = new Lampa.Reguest();
+            var scroll  = new Lampa.Scroll({mask: true, over: true});
             var files   = new Lampa.Explorer(object);
             var _this   = this;
 
             this.create = function() {
                 Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
-                this.tryGateway(0); 
-                return files.render();
-            };
+                
+                // Формируем запрос через зашифрованный шлюз bwa
+                var targetUrl = base + token + '?id=' + object.movie.id;
+                var finalUrl  = proxy + targetUrl;
 
-            this.tryGateway = function(index) {
-                if (index >= gateways.length) {
-                    Lampa.Noty.show('Королева: Все шлюзы Vega заблокированы. Нужен VPN на роутере.');
-                    return;
-                }
+                Lampa.Noty.show('Королева: Открываю защищенный канал...');
 
-                var targetUrl = base + '?id=' + object.movie.id + '&token=' + token + '&cb=' + Math.random();
-                var finalUrl  = gateways[index] + encodeURIComponent(targetUrl);
-
-                Lampa.Noty.show('Королева: Штурм канала ' + (index + 1) + '...');
-
-                network.native(finalUrl, function(result) {
-                    try {
-                        // Распаковка данных (разные прокси отдают по-разному)
-                        var data = result.contents ? (typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents) : (typeof result === 'string' ? JSON.parse(result) : result);
-                        
-                        if (data && data.length) {
-                            Lampa.Noty.show('Королева: ПРОРЫВ! Загружаю...');
-                            files.append(data);
-                            _this.start();
-                        } else {
-                            _this.tryGateway(index + 1);
-                        }
-                    } catch(e) {
-                        _this.tryGateway(index + 1);
+                network.native(finalUrl, function(json) {
+                    if (json && json.length) {
+                        Lampa.Noty.show('Королева: Успех! Фильмы найдены.');
+                        files.append(json);
+                        _this.start();
+                    } else {
+                        Lampa.Noty.show('Королева: Внутри пока пусто');
                     }
                 }, function() {
-                    _this.tryGateway(index + 1);
+                    Lampa.Noty.show('Королева: Ошибка связи (Vega DPI)');
                 });
+
+                return files.render();
             };
 
             this.render = function() { return files.render(); };
@@ -70,15 +54,15 @@
             this.destroy = function() { network.clear(); files.destroy(); };
         });
 
-        // Создаем ту самую кнопку "Королева"
+        // Та самая фиолетовая кнопка "Королева"
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.lampac--button').length) {
-                    var btn = $('<div class="full-start__button selector view--online lampac--button" style="background: linear-gradient(45deg, #7b1fa2, #4a148c) !important; color: #fff !important; display: flex; align-items: center; justify-content: center; margin-top: 10px; border-radius: 8px; height: 3.8em; width: 14em; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">' +
+                    var btn = $('<div class="full-start__button selector view--online lampac--button" style="background: #7b1fa2 !important; color: #fff !important; display: flex; align-items: center; justify-content: center; margin-top: 10px; border-radius: 8px; height: 3.5em; width: 14em;">' +
                         '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="margin-right: 12px;">' +
                         '<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>' +
-                        '<span style="font-weight: bold; font-size: 1.3em; letter-spacing: 1px;">Королева</span></div>');
+                        '<span style="font-weight: bold; font-size: 1.3em;">Королева</span></div>');
 
                     btn.on('hover:enter', function() {
                         Lampa.Activity.push({ title: 'Королева', component: 'hdgo', movie: e.data.movie });
