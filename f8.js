@@ -1,28 +1,33 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v43.0 X-Sena)
+    // Lampa Plugin: i6poH3a "Королева" (v44.0 Octopus)
     var token = 'f8lgdpq2';
     
-    // Твои новые бронебойные каналы
+    // МАКСИМАЛЬНЫЙ СПИСОК УЗЛОВ (X-Sena + Global Mirrors)
     var mirrors = [
-        'https://cf.xsena.red/lite/events', // WARP (Cloudflare)
-        'https://pl.xsena.red/lite/events', // WAW (Poland)
-        'http://nl.xsena.red/lite/events'   // AMS (Netherlands)
+        'https://cf.xsena.red/lite/events', // Cloudflare (Самый сильный)
+        'https://pl.xsena.red/lite/events', // Польша
+        'https://de.xsena.red/lite/events', // Германия (Новый!)
+        'https://fi.xsena.red/lite/events', // Финляндия (Новый!)
+        'http://nl.xsena.red/lite/events',   // Нидерланды
+        'https://hbgo.me/lite/events',      // Зеркало HBGO
+        'https://lampas.top/lite/events',   // Зеркало Lampas
+        'https://jac.red/lite/events'       // Зеркало Jacred
     ];
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Каналы X-Sena подключены! 👑');
+        Lampa.Noty.show('Королева: Глобальная сеть активирована! 👑');
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.btn--queen').length) {
-                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #1a237e, #4a148c) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; border: 1px solid #3f51b5;">' +
+                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #0d47a1, #6a1b9a) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%">' +
                         '<span style="font-weight:bold; font-size:1.2em; color: #fff;">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        tryMirror(0, e.data.movie);
+                        tryAllMirrors(0, e.data.movie);
                     });
                     
                     render.find('.view--torrent').after(btn);
@@ -31,16 +36,19 @@
         });
     }
 
-    function tryMirror(index, movie) {
+    function tryAllMirrors(index, movie) {
         if (index >= mirrors.length) {
-            Lampa.Noty.show('Королева: Все узлы X-Sena заблокированы Vega');
+            Lampa.Noty.show('Королева: Все 8 узлов заблокированы Vega!');
             return;
         }
 
-        var currentMirror = mirrors[index];
-        Lampa.Noty.show('Королева: Штурм через ' + (index === 0 ? 'WARP' : (index === 1 ? 'WAW' : 'AMS')) + '...');
+        var current = mirrors[index];
+        var location = current.split('.')[0].split('//')[1].toUpperCase();
+        if (location === 'LAMPAS' || location === 'HBGO') location = 'Global';
 
-        var url = currentMirror + '?id=' + movie.id + '&token=' + token + '&cb=' + Math.random();
+        Lampa.Noty.show('Королева: Проверка узла ' + location + '...');
+
+        var url = current + '?id=' + movie.id + '&token=' + token + '&cb=' + Math.random();
 
         var network = new Lampa.Reguest();
         network.native(url, function(result) {
@@ -49,6 +57,7 @@
                 var items = data.items || data.playlist || data;
 
                 if (items && items.length) {
+                    Lampa.Noty.show('Королева: Есть связь через ' + location + '!');
                     Lampa.Select.show({
                         title: 'Озвучка (Королева): ' + movie.title,
                         items: items.map(function(i) {
@@ -61,19 +70,18 @@
                         onSelect: function(item) {
                             Lampa.Player.run(item);
                             Lampa.Player.playlist([item]);
-                        },
-                        onBack: function() { Lampa.Controller.toggle('full'); }
+                        }
                     });
                 } else {
-                    tryMirror(index + 1, movie); // Если пусто, пробуем следующий узел
+                    tryAllMirrors(index + 1, movie);
                 }
             } catch(e) {
-                tryMirror(index + 1, movie);
+                tryAllMirrors(index + 1, movie);
             }
         }, function() {
-            tryMirror(index + 1, movie); // Если ошибка сети, идем дальше
+            tryAllMirrors(index + 1, movie);
         }, false, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (SMART-TV; Tizen 5.0)' }
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
         });
     }
 
