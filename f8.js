@@ -1,27 +1,28 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v42.0 Inside)
+    // Lampa Plugin: i6poH3a "Королева" (v43.0 X-Sena)
     var token = 'f8lgdpq2';
     
-    // АДРЕСА, КОТОРЫЕ VEGA ПРОПУСКАЕТ (Взято из BWA)
-    var bwa_base    = 'https://lampa.stream/lite/events'; // База на рабочем зеркале
-    var bwa_gate    = 'https://bwa.to/proxy/';            // Рабочий шлюз
-    var backup_gate = 'https://corsproxy.io/?';           // Резерв
+    // Твои новые бронебойные каналы
+    var mirrors = [
+        'https://cf.xsena.red/lite/events', // WARP (Cloudflare)
+        'https://pl.xsena.red/lite/events', // WAW (Poland)
+        'http://nl.xsena.red/lite/events'   // AMS (Netherlands)
+    ];
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Взломанные шлюзы BWA активны! 👑');
+        Lampa.Noty.show('Королева: Каналы X-Sena подключены! 👑');
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.btn--queen').length) {
-                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c, #7b1fa2) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%">' +
+                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #1a237e, #4a148c) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; border: 1px solid #3f51b5;">' +
                         '<span style="font-weight:bold; font-size:1.2em; color: #fff;">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('Королева: Иду по каналу BWA...');
-                        runInsideLogic(e.data.movie);
+                        tryMirror(0, e.data.movie);
                     });
                     
                     render.find('.view--torrent').after(btn);
@@ -30,55 +31,49 @@
         });
     }
 
-    function runInsideLogic(movie) {
-        // Формируем запрос через рабочий домен lampa.stream
-        var targetUrl = bwa_base + '?id=' + movie.id + '&token=' + token + '&cb=' + Math.random();
-        
-        // ХИТРОСТЬ BWA: Они используют внутренний метод проксирования самой Лампы
-        var finalUrl = bwa_gate + encodeURIComponent(targetUrl);
+    function tryMirror(index, movie) {
+        if (index >= mirrors.length) {
+            Lampa.Noty.show('Королева: Все узлы X-Sena заблокированы Vega');
+            return;
+        }
+
+        var currentMirror = mirrors[index];
+        Lampa.Noty.show('Королева: Штурм через ' + (index === 0 ? 'WARP' : (index === 1 ? 'WAW' : 'AMS')) + '...');
+
+        var url = currentMirror + '?id=' + movie.id + '&token=' + token + '&cb=' + Math.random();
 
         var network = new Lampa.Reguest();
-        network.native(finalUrl, function(result) {
+        network.native(url, function(result) {
             try {
-                // Пытаемся распарсить данные (BWA-style)
                 var data = (typeof result === 'string') ? JSON.parse(result) : result;
                 var items = data.items || data.playlist || data;
 
-                if (items && Array.isArray(items) && items.length) {
+                if (items && items.length) {
                     Lampa.Select.show({
                         title: 'Озвучка (Королева): ' + movie.title,
                         items: items.map(function(i) {
                             return {
                                 title: i.title || i.name || 'Смотреть',
-                                subtitle: i.quality || i.voice || 'Нажми для запуска',
+                                subtitle: i.quality || 'HD',
                                 url: i.video || i.file || i.link
                             };
                         }),
                         onSelect: function(item) {
                             Lampa.Player.run(item);
                             Lampa.Player.playlist([item]);
-                        }
+                        },
+                        onBack: function() { Lampa.Controller.toggle('full'); }
                     });
                 } else {
-                    Lampa.Noty.show('Королева: Пустой ответ (Vega режет данные)');
+                    tryMirror(index + 1, movie); // Если пусто, пробуем следующий узел
                 }
             } catch(e) {
-                Lampa.Noty.show('Королева: Ошибка шлюза BWA');
+                tryMirror(index + 1, movie);
             }
         }, function() {
-            // Если BWA-шлюз подвел, пробуем резерв
-            Lampa.Noty.show('Королева: Пробую резервный канал...');
-            var fallbackUrl = backup_gate + encodeURIComponent(targetUrl);
-            network.native(fallbackUrl, function(res) {
-                 // Повтор логики для резерва
-                 Lampa.Noty.show('Королева: Резерв пробит!');
-            });
+            tryMirror(index + 1, movie); // Если ошибка сети, идем дальше
         }, false, {
-            // ФИНАЛЬНАЯ ФИШКА: Заголовки, которые Vega считает "своими"
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            headers: { 'User-Agent': 'Mozilla/5.0 (SMART-TV; Tizen 5.0)' }
         });
     }
 
