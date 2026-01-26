@@ -1,10 +1,9 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v27.0 Triple Channel)
+    // Lampa Plugin: i6poH3a "Королева" (v28.0 Final UI)
     var token = 'f8lgdpq2';
     var base  = 'https://lampac.hdgo.me/lite/events';
     
-    // Список шлюзов, которые Vega еще не "раскусила"
     var gateways = [
         'https://api.allorigins.win/get?url=',
         'https://corsproxy.io/?',
@@ -13,7 +12,7 @@
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Штурм системы Vega... 👑');
+        Lampa.Noty.show('Королева: Канал пробит! Настраиваю экран... 👑');
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
@@ -38,28 +37,38 @@
             return;
         }
 
-        Lampa.Noty.show('Королева: Канал ' + (index + 1) + '...');
-        
         var targetUrl = base + '?id=' + movie.id + '&token=' + token + '&cb=' + Math.random();
         var finalUrl  = gateways[index] + encodeURIComponent(targetUrl);
 
         var network = new Lampa.Reguest();
         network.native(finalUrl, function(result) {
             try {
-                // Пытаемся достать данные (у каждого прокси свой формат)
                 var contents = result.contents ? result.contents : result;
-                var data = typeof contents === 'string' ? JSON.parse(contents) : contents;
+                var rawData = typeof contents === 'string' ? JSON.parse(contents) : contents;
                 
-                if (data && data.length) {
-                    Lampa.Noty.show('Королева: Есть пробитие!');
+                if (rawData && rawData.length) {
+                    // ТРАНСФОРМАЦИЯ ДАННЫХ: подгоняем под стандарт Лампы
+                    var formattedData = rawData.map(function(item) {
+                        return {
+                            title: item.title || 'Без названия',
+                            subtitle: item.quality || item.info || '',
+                            quality: item.quality || 'HD',
+                            url: item.video || item.link, // Ссылка на видео
+                            data: item // Сохраняем оригинал на всякий случай
+                        };
+                    });
+
                     Lampa.Select.show({
                         title: 'Королева: Выбор озвучки',
-                        items: data,
+                        items: formattedData,
                         onSelect: function(item) {
+                            // Запуск плеера
                             Lampa.Player.run(item);
                             Lampa.Player.playlist([item]);
                         },
-                        onBack: function() { Lampa.Controller.toggle('full'); }
+                        onBack: function() {
+                            Lampa.Controller.toggle('full');
+                        }
                     });
                 } else {
                     tryGateways(index + 1, movie);
