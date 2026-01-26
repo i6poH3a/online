@@ -1,15 +1,14 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v3.5 Final)
+    // Lampa Plugin: i6poH3a "Королева" (v4.0 Mega Fix)
     var token = 'f8lgdpq2';
-    // Используем самый стабильный прокси
-    var proxy = 'https://corsproxy.io/?';
+    // Используем новый, менее известный прокси-шлюз
+    var proxy = 'https://api.allorigins.win/raw?url=';
     var base  = 'https://lampac.hdgo.me/';
 
     function startPlugin() {
         window.hdgo_plugin = true;
 
-        // Регистрируем "Королеву" как компонент
         Lampa.Component.add('hdgo', function(object) {
             var network = new Lampa.Reguest();
             var scroll  = new Lampa.Scroll({mask: true, over: true});
@@ -17,18 +16,20 @@
             var _this   = this;
 
             this.create = function() {
-                var url = proxy + encodeURIComponent(base + 'lite/events?id=' + object.movie.id + '&token=' + token);
-                
-                network.native(url, function(json) {
+                // Прячем запрос в зашифрованный туннель
+                var target = base + 'lite/events?id=' + object.movie.id + '&token=' + token;
+                var finalUrl = proxy + encodeURIComponent(target);
+
+                network.native(finalUrl, function(json) {
                     if (json && json.length) {
-                        Lampa.Noty.show('Королева нашла видео!');
+                        Lampa.Noty.show('Королева: Связь установлена!');
                         files.append(json);
                         _this.start();
                     } else {
-                        Lampa.Noty.show('Королева: Пусто или блок');
+                        Lampa.Noty.show('Королева: Сервер молчит (Vega блокирует)');
                     }
                 }, function() {
-                    Lampa.Noty.show('Королева: Ошибка сети');
+                    Lampa.Noty.show('Королева: Ошибка сети (Нужно сменить DNS)');
                 });
 
                 return files.render();
@@ -50,7 +51,6 @@
             this.destroy = function() { network.clear(); scroll.destroy(); files.destroy(); };
         });
 
-        // Создаем кнопку "Королева" в карточке
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
@@ -72,7 +72,6 @@
         });
     }
 
-    // Запуск плагина после прогрузки системы
     var wait = setInterval(function() {
         if (window.Lampa && Lampa.Component) { clearInterval(wait); startPlugin(); }
     }, 100);
