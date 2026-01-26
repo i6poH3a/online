@@ -1,20 +1,19 @@
 (function() {
     'use strict';
-    // Lampa Full Plugin: i6poH3a (Original Source with Vega Fix)
+    // Lampa Plugin: HDGO i6poH3a (Token: f8lgdpq2)
     
     var Defined = {
         api: 'lampac',
-        localhost: 'https://lampac.hdgo.me/', // Сменил на https
+        localhost: 'https://lampac.hdgo.me/', // Исправлено на HTTPS
         apn: 'https://warp.cfhttp.top/'
     };
 
-    var token = 'f8lgdpq2';
+    var token = 'f8lgdpq2'; // Твой токен
 
-    // Функция запуска моста (то самое, что достает кнопку)
+    // Эта функция ищет фильмы и создает список
     function rchRun(json, call) {
         if (typeof NativeWsClient == 'undefined') {
-            // Загружаем скрипт клиента через защищенный протокол
-            Lampa.Utils.putScript(["https://lampac.hdgo.me/js/nws-client-es5.js?v2026"], function() {}, false, function() {
+            Lampa.Utils.putScript(["https://lampac.hdgo.me/js/nws-client-es5.js"], function() {}, false, function() {
                 rchInvoke(json, call);
             }, true);
         } else {
@@ -25,7 +24,7 @@
     function startPlugin() {
         window.hdgo_plugin = true;
         
-        // Манифест, который создает ту самую кнопку "Онлайн"
+        // Манифест кнопки "Онлайн"
         var manifst = {
             type: 'video',
             version: '1.6.6',
@@ -43,35 +42,46 @@
             }
         };
 
-        // Регистрация плагина в системе Лампы
         Lampa.Manifest.plugins = manifst;
 
-        // Самый важный кусок кода: Отрисовка кнопки в карточке фильма
+        // Создание кнопки в карточке фильма
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
-                var btn = $('<div class="full-start__button selector view--online lampac--button"><span>Онлайн</span></div>');
-                btn.on('hover:enter', function() {
-                    Lampa.Activity.push({
-                        url: '',
-                        title: 'Онлайн',
-                        component: 'hdgo',
-                        movie: e.data.movie,
-                        page: 1
+                // Пытаемся найти место после кнопки Трейлер или Торренты
+                var render = e.object.activity.render();
+                var torrent_btn = render.find('.view--torrent');
+                
+                if (!render.find('.lampac--button').length) {
+                    var btn = $('<div class="full-start__button selector view--online lampac--button"><span>Онлайн</span></div>');
+                    
+                    btn.on('hover:enter', function() {
+                        Lampa.Activity.push({
+                            url: '',
+                            title: 'Онлайн',
+                            component: 'hdgo',
+                            movie: e.data.movie,
+                            page: 1
+                        });
                     });
-                });
-                // Вставляем кнопку после кнопки Трейлер или Торренты
-                e.render.find('.view--torrent').after(btn);
+
+                    if (torrent_btn.length) torrent_btn.after(btn);
+                    else render.find('.full-start__buttons').append(btn);
+                }
             }
         });
     }
 
-    // Если плагин еще не запущен - запускаем
-    if (!window.hdgo_plugin) {
-        // Подменяем все внутренние вызовы на HTTPS на лету
-        var email = Lampa.Storage.get('account_email', '');
-        var uid = Lampa.Storage.get('lampac_unic_id', '');
-        
-        // Команда на инициализацию с твоим токеном
-        startPlugin();
+    // Запуск всего механизма
+    function init() {
+        if (window.Lampa) {
+            startPlugin();
+            // Подгружаем вспомогательные стили
+            Lampa.Template.add('hdgo_style', '<style>.view--online.lampac--button{background-color: #3535ff !important;}</style>');
+            $('body').append(Lampa.Template.get('hdgo_style', {}, true));
+        } else {
+            setTimeout(init, 100);
+        }
     }
+
+    init();
 })();
