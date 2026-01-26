@@ -1,26 +1,26 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v40.0 BWA-Bypass)
+    // Lampa Plugin: i6poH3a "Королева" (v41.0 BWA-Soul)
     var token = 'f8lgdpq2';
     var base  = 'https://lampac.hdgo.me/lite/events';
     
-    // Используем тот же шлюз, через который проходят системные плагины
-    var proxy = 'https://corsproxy.io/?';
+    // ГЛАВНЫЙ СЕКРЕТ: Используем шлюз BWA, который у тебя работает
+    var bwa_proxy = 'https://bwa.to/proxy/';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Синхронизация с BWA... 👑');
+        Lampa.Noty.show('Королева: Логика BWA внедрена! 👑');
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.btn--queen').length) {
-                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: #7b1fa2 !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%">' +
+                    var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c, #d81b60) !important; border-radius: 10px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">' +
                         '<span style="font-weight:bold; font-size:1.2em; color: #fff;">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('Королева: Запрашиваю список...');
-                        runBwaLogic(e.data.movie);
+                        Lampa.Noty.show('Королева: Маскировка под BWA...');
+                        runQueenBwa(e.data.movie);
                     });
                     
                     render.find('.view--torrent').after(btn);
@@ -29,21 +29,21 @@
         });
     }
 
-    function runBwaLogic(movie) {
-        // Формируем запрос как системный "online" запрос
-        var target = base + '?id=' + movie.id + '&token=' + token + '&cb=' + Math.random();
-        var url    = proxy + encodeURIComponent(target);
+    function runQueenBwa(movie) {
+        // Формируем запрос по схеме BWA
+        var targetUrl = base + '?id=' + movie.id + '&token=' + token + '&cb=' + Math.random();
+        var finalUrl  = bwa_proxy + encodeURIComponent(targetUrl);
 
-        // Используем системный Lampa.Reguest (это ключ к успеху BWA)
+        // Используем мощный сетевой движок Лампы
         var network = new Lampa.Reguest();
         
-        network.native(url, function(result) {
+        network.native(finalUrl, function(result) {
             try {
-                // Пытаемся распарсить данные, как это делает системный онлайн-плагин
-                var data = result.contents ? (typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents) : (typeof result === 'string' ? JSON.parse(result) : result);
+                // Разбор данных (как в BWA)
+                var data = typeof result === 'string' ? JSON.parse(result) : (result.contents ? (typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents) : result);
                 var items = data.items || data.playlist || data;
 
-                if (items && Array.isArray(items) && items.length) {
+                if (items && items.length) {
                     Lampa.Select.show({
                         title: 'Озвучка (Королева): ' + movie.title,
                         items: items.map(function(i) {
@@ -60,21 +60,23 @@
                         onBack: function() { Lampa.Controller.toggle('full'); }
                     });
                 } else {
-                    Lampa.Noty.show('Королева: Список пуст. Vega обрезала ответ.');
+                    Lampa.Noty.show('Королева: BWA-шлюз пуст. Vega блокирует контент.');
                 }
             } catch(e) {
-                Lampa.Noty.show('Королева: Ошибка обработки (DPI)');
+                Lampa.Noty.show('Королева: Ошибка декодирования BWA');
             }
         }, function() {
-            Lampa.Noty.show('Королева: Шлюз заблокирован Vega');
+            Lampa.Noty.show('Королева: Vega заблокировала даже BWA-шлюз');
         }, false, {
-            // Маскируемся под системный плагин (секретка BWA)
+            // Подменяем UA на телевизор Samsung (Tizen), чтобы провайдер не лез
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Linux; Tizen 5.0; TV) Lampa/1.0'
+                'User-Agent': 'Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.0) AppleWebkit/537.36 (KHTML, like Gecko) SamsungBrowser/2.2 Chrome/63.0.3239.111 Safari/537.36',
+                'X-Requested-With': 'XMLHttpRequest'
             }
         });
     }
 
+    // Запуск с проверкой готовности Лампы
     var wait = setInterval(function() {
         if (window && window.Lampa) { clearInterval(wait); startPlugin(); }
     }, 500);
