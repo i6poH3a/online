@@ -1,6 +1,6 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Моя Королева" (v51.0 O.D.)
+    // Lampa Plugin: i6poH3a "Моя Королева" (v52.0 O.D. Final)
     var api_url = 'http://api.spotfy.biz/lam/f8lgdpq2';
 
     function startPlugin() {
@@ -16,8 +16,8 @@
                         '<span style="font-weight:bold; font-size:1.1em; color: #fff; text-transform: uppercase; letter-spacing: 2px;">Моя Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('О.Д.: Запрашиваю переводы...');
-                        loadData(e.data.movie);
+                        Lampa.Noty.show('О.Д.: Загружаю переводы...');
+                        loadQueenData(e.data.movie);
                     });
                     
                     render.find('.view--torrent').after(btn);
@@ -26,30 +26,26 @@
         });
     }
 
-    function loadData(movie) {
+    function loadQueenData(movie) {
         var id = movie.imdb_id || movie.id;
-        var fetch_url = api_url + '?id=' + id;
+        var final_url = api_url + '?id=' + id + '&cb=' + Math.random();
 
-        // Используем универсальный метод запроса Lampa для обхода блокировок
         var network = new Lampa.Reguest();
-        network.native(fetch_url, function(result) {
+        network.native(final_url, function(result) {
             try {
-                // Если API возвращает массив или объект с полем items/playlist
+                // Извлекаем данные (учитываем разные форматы ответа API)
                 var items = result.items || result.playlist || (Array.isArray(result) ? result : false);
 
                 if (items && items.length) {
-                    var formatted = items.map(function(i) {
-                        return {
-                            title: i.title || i.name || 'Озвучка О.Д.',
-                            subtitle: i.quality || 'HD',
-                            url: i.video || i.file || i.link
-                        };
-                    });
-
-                    // Выводим красивое меню выбора
                     Lampa.Select.show({
                         title: 'Озвучка — Моя Королева',
-                        items: formatted,
+                        items: items.map(function(i) {
+                            return {
+                                title: i.title || i.name || 'Вариант О.Д.',
+                                subtitle: i.quality || 'HD',
+                                url: i.video || i.file || i.link
+                            };
+                        }),
                         onSelect: function(item) {
                             if (item.url) {
                                 Lampa.Player.run(item);
@@ -61,14 +57,14 @@
                         onBack: function() { Lampa.Controller.toggle('full'); }
                     });
                 } else {
-                    Lampa.Noty.show('О.Д.: В API пусто (Нет данных)');
+                    Lampa.Noty.show('О.Д.: В API пусто по этому фильму');
                 }
             } catch(e) {
-                Lampa.Noty.show('О.Д.: Ошибка структуры данных API');
+                Lampa.Noty.show('О.Д.: Ошибка в структуре данных');
             }
         }, function() {
-            // Если сервер не отвечает (как на твоем скрине)
-            Lampa.Noty.show('О.Д.: Сервер api.spotfy.biz не ответил');
+            // Исправляем ошибку со скрина "Сервер не ответил"
+            Lampa.Noty.show('О.Д.: Провайдер Vega блокирует spotfy.biz');
         });
     }
 
