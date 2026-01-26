@@ -1,24 +1,76 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v29.0 Universal)
+    // Lampa Plugin: i6poH3a "Королева" (v30.0 Tactical)
     var token = 'f8lgdpq2';
     var base  = 'https://lampac.hdgo.me/lite/events';
-    var proxy = 'https://api.allorigins.win/get?url=';
+    // Меняем прокси на более редкий
+    var proxy = 'https://corsproxy.io/?';
 
     function startPlugin() {
         window.hdgo_plugin = true;
-        Lampa.Noty.show('Королева: Взлом данных Vega... 👑');
+        Lampa.Noty.show('Королева: Попытка №30. Иду на прорыв! 👑');
 
+        Lampa.Component.add('hdgo', function(object) {
+            var network = new Lampa.Reguest();
+            var files   = new Lampa.Explorer(object);
+            var _this   = this;
+
+            this.create = function() {
+                Lampa.Background.immediately(Lampa.Utils.cardImgBackgroundBlur(object.movie));
+                
+                // ТЕСТОВАЯ КНОПКА: Если ты её видишь, значит экран работает
+                files.append([{
+                    title: '⏳ Связь с Vega...',
+                    quality: 'CHECK',
+                    info: 'Если список не обновится - смени DNS на 1.1.1.1'
+                }]);
+
+                var targetUrl = base + '?id=' + object.movie.id + '&token=' + token + '&v=' + Math.random();
+                var finalUrl  = proxy + encodeURIComponent(targetUrl);
+
+                network.native(finalUrl, function(json) {
+                    files.clear();
+                    if (json && json.length) {
+                        Lampa.Noty.show('Королева: Данные получены!');
+                        files.append(json);
+                    } else {
+                        files.append([{title: '❌ Провайдер Vega прислал пустоту', quality: 'DPI'}]);
+                    }
+                    _this.start();
+                }, function() {
+                    files.clear();
+                    files.append([{title: '❌ Vega заблокировала шлюз полностью', quality: 'BLOCK'}]);
+                    _this.start();
+                });
+
+                return files.render();
+            };
+
+            this.render = function() { return files.render(); };
+            this.start = function() {
+                Lampa.Controller.add('content', {
+                    toggle: function() {
+                        Lampa.Controller.collectionSet(files.render());
+                        Lampa.Controller.collectionFocus(files.render().find('.selector').eq(0), files.render());
+                    },
+                    back: function() { Lampa.Activity.backward(); }
+                });
+                Lampa.Controller.toggle('content');
+            };
+            this.pause = function() {}; this.stop = function() {};
+            this.destroy = function() { network.clear(); files.destroy(); };
+        });
+
+        // Рисуем кнопку "Королева"
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 if (!render.find('.btn--queen').length) {
                     var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: #7b1fa2 !important; border-radius: 8px; margin-top:10px; height:3.5em; display:flex; align-items:center; justify-content:center; width:100%">' +
-                        '<span style="font-weight:bold; color: #fff;">Королева 👑</span></div>');
+                        '<span style="font-weight:bold;">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('Королева: Получаю список переводов...');
-                        loadData(e.data.movie);
+                        Lampa.Activity.push({ title: 'Королева', component: 'hdgo', movie: e.data.movie });
                     });
                     
                     render.find('.view--torrent').after(btn);
@@ -27,53 +79,10 @@
         });
     }
 
-    function loadData(movie) {
-        var url = proxy + encodeURIComponent(base + '?id=' + movie.id + '&token=' + token + '&cb=' + Date.now());
-
-        var network = new Lampa.Reguest();
-        network.native(url, function(result) {
-            try {
-                var contents = result.contents ? (typeof result.contents === 'string' ? JSON.parse(result.contents) : result.contents) : result;
-                
-                // Если данные пришли в объекте (например, data.items), вытаскиваем массив
-                var items = contents.items || contents.playlist || contents;
-
-                if (items && Array.isArray(items) && items.length) {
-                    // УНИВЕРСАЛЬНЫЙ МАППЕР (подгоняем под экран выбора)
-                    var choices = items.map(function(it) {
-                        return {
-                            title: it.title || it.name || 'Вариант без названия',
-                            subtitle: it.quality || it.voice || it.translation || 'Качество HD',
-                            url: it.video || it.file || it.link, // Ссылка на сам фильм
-                            quality: it.quality || 'HD'
-                        };
-                    });
-
-                    Lampa.Select.show({
-                        title: 'Выбор озвучки (Королева)',
-                        items: choices,
-                        onSelect: function(item) {
-                            if (item.url) {
-                                Lampa.Player.run(item);
-                                Lampa.Player.playlist([item]);
-                            } else {
-                                Lampa.Noty.show('Королева: Ссылка на видео не найдена');
-                            }
-                        },
-                        onBack: function() { Lampa.Controller.toggle('full'); }
-                    });
-                } else {
-                    Lampa.Noty.show('Королева: Vega обнулила список (Пусто)');
-                }
-            } catch(e) {
-                Lampa.Noty.show('Королева: Ошибка обработки данных');
-            }
-        }, function() {
-            Lampa.Noty.show('Королева: Блокировка связи Vega');
-        });
+    if (window.Lampa) startPlugin();
+    else {
+        var wait = setInterval(function() {
+            if (window.Lampa) { clearInterval(wait); startPlugin(); }
+        }, 500);
     }
-
-    var wait = setInterval(function() {
-        if (window && window.Lampa) { clearInterval(wait); startPlugin(); }
-    }, 500);
 })();
