@@ -1,8 +1,8 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Королева" (v37.0 Armageddon)
-    var token = 'f8lgdpq2';
-    var base  = 'https://lampac.hdgo.me/lite/events';
+    // Lampa Plugin: i6poH3a "Королева" (v38.0 Stealth-Base64)
+    var _0x1a2b = 'aHR0cHM6Ly9sYW1wYWMuaGRnby5tZS9saXRlL2V2ZW50cz9pZD0='; // Зашифрованный адрес
+    var _0x3c4d = 'JnRva2VuPWY4bmdkcHEy'; // Зашифрованный токен
     var proxy = 'https://api.allorigins.win/get?url=';
 
     function startPlugin() {
@@ -16,11 +16,12 @@
                         '<span style="font-weight:bold; font-size:1.2em; color: #fff;">Королева 👑</span></div>');
                     
                     btn.on('hover:enter', function() {
-                        Lampa.Noty.show('Королева: Штурм начался...');
+                        Lampa.Noty.show('Королева: Активация стелс-канала...');
                         
-                        var url = proxy + encodeURIComponent(base + '?id=' + e.data.movie.id + '&token=' + token + '&cb=' + Date.now());
+                        // Дешифровка адреса прямо в телеке
+                        var target = atob(_0x1a2b) + e.data.movie.id + atob(_0x3c4d) + '&cb=' + Date.now();
+                        var url = proxy + encodeURIComponent(target);
 
-                        // Используем системный метод Lampa, который Vega сложнее отследить
                         var network = new Lampa.Reguest();
                         network.native(url, function(result) {
                             try {
@@ -40,20 +41,12 @@
                                         onSelect: function(item) {
                                             Lampa.Player.run(item);
                                             Lampa.Player.playlist([item]);
-                                        },
-                                        onBack: function() { Lampa.Controller.toggle('full'); }
+                                        }
                                     });
-                                } else {
-                                    Lampa.Noty.show('Vega обнулила данные. Смени DNS на 1.1.1.1!');
-                                }
-                            } catch(e) {
-                                Lampa.Noty.show('Ошибка: Vega блокирует ответ');
-                            }
-                        }, function() {
-                            Lampa.Noty.show('Канал заблокирован провайдером');
-                        });
+                                } else { Lampa.Noty.show('Vega обнулила пакет. Нужен DNS!'); }
+                            } catch(e) { Lampa.Noty.show('Ошибка: Vega блокирует зашифрованный канал'); }
+                        }, function() { Lampa.Noty.show('Канал полностью закрыт'); });
                     });
-                    
                     render.find('.view--torrent').after(btn);
                 }
             }
