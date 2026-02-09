@@ -1806,8 +1806,8 @@ else if (element.url) {
         zh: '按住“确定”键调出上下文菜单'
       },
       title_online: { //
-        ru: 'Онлайн',
-        uk: 'Онлайн',
+        ru: 'Для тебя',
+        uk: 'Для тебя',
         en: 'Online',
         zh: '在线的'
       },
