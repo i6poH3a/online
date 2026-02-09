@@ -1735,8 +1735,8 @@ else if (element.url) {
     window.hdgo_plugin = true;
     var manifst = {
       type: 'video',
-      version: '1.6.6',
-      name: 'HDGO',
+      version: '1',
+      name: '👑Моя Королева👑',
       description: 'Плагин для просмотра онлайн сериалов и фильмов',
       component: 'hdgo',
       onContextMenu: function onContextMenu(object) {
