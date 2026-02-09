@@ -1,106 +1,111 @@
 (function() {
     'use strict';
-    // Lampa Plugin: i6poH3a "Моя Королева" (v57.0 Fixed)
+
+    // --- НАСТРОЙКИ ---
+    var api_link = 'http://api.spotfy.biz/lam/f8lgdpq2'; // Твоя ссылка
+    var button_name = '👑 Моя Королева';
     
-    // Исправлено: адаптивный протокол (будет работать и на http, и на https)
-    // Если api.spotfy.biz не поддерживает HTTPS, браузер может блокировать запрос.
-    var api_url = 'http://api.spotfy.biz/lam/f8lgdpq2'; 
+    // Фразы, которые пишет система при нажатии (Рандом)
+    var phrases = [
+        'О.Д.: Бригада выехала за кассетой...',
+        'О.Д.: ВТБ спонсирует этот просмотр...',
+        'О.Д.: Томми Оливер ищет файл...',
+        'О.Д.: Загружаю в синий Lamborghini...',
+        'О.Д.: Считаем кэш, жди...',
+        'О.Д.: Райффайзен одобряет этот выбор...',
+        'О.Д.: Слушаю и повинуюсь, Ваше Величество...'
+    ];
 
     function startPlugin() {
-        window.hdgo_plugin = true;
-        
-        // Добавляем стили для анимации
-        $('body').append('<style>.queen-loading { opacity: 0.5; pointer-events: none; }</style>');
-        
-        Lampa.Noty.show('Моя Королева: Плагин активен 👑');
+        if (window.queen_plugin_init) return;
+        window.queen_plugin_init = true;
+
+        // Сообщаем, что плагин на месте
+        setTimeout(function() {
+            Lampa.Noty.show('👑 Бригада на связи');
+        }, 1000);
 
         Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
                 var render = e.object.activity.render();
                 
-                // Проверка, чтобы не дублировать кнопку
-                if (render.find('.btn--queen').length) return;
-
-                // Кнопка
-                var btn = $('<div class="full-start__button selector view--online btn--queen" style="background: linear-gradient(135deg, #4a148c 0%, #311b92 100%) !important; border-radius: 12px; margin-top:10px; height:3.8em; display:flex; align-items:center; justify-content:center; width:100%; border: 1px solid #7b1fa2; box-shadow: 0 0 10px rgba(123, 31, 162, 0.5);">' +
-                    '<span style="font-weight:bold; font-size:1.1em; color: #fff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Моя Королева 👑</span></div>');
-
-                // Логика нажатия (и клик, и пульт)
-                btn.on('hover:enter click', function() {
-                    var _this = $(this);
+                // Если кнопки еще нет - рисуем
+                if (!render.find('.queen-btn').length) {
                     
-                    // Анимация загрузки
-                    _this.addClass('queen-loading');
-                    _this.find('span').text('Загружаю...');
+                    // Стиль кнопки: Градиент фиолетово-синий, жирный текст
+                    var btn = $(
+                        '<div class="full-start__button selector view--online queen-btn" style="background: linear-gradient(90deg, #512da8 0%, #1a237e 100%); border: 1px solid #7c4dff; border-radius: 8px; margin-top: 10px; width: 100%; display: flex; justify-content: center; align-items: center; text-align: center;">' +
+                        '<span style="font-weight: 800; font-size: 1.1em; color: white; text-transform: uppercase; text-shadow: 0px 2px 4px rgba(0,0,0,0.6);">' + button_name + '</span>' +
+                        '</div>'
+                    );
 
-                    // Получаем ID (IMDB или KP)
-                    var id = e.data.movie.imdb_id || e.data.movie.id; // KP ID часто лежит просто в id
-                    var final_url = api_url + '?id=' + id;
-                    
-                    console.log('Queen Request:', final_url); // Для отладки в консоли
+                    // Нажатие (Клик или Enter с пульта)
+                    btn.on('hover:enter click', function() {
+                        var random_text = phrases[Math.floor(Math.random() * phrases.length)];
+                        Lampa.Noty.show(random_text); // Показываем прикол
 
-                    $.ajax({
-                        url: final_url,
-                        method: 'GET',
-                        dataType: 'json',
-                        timeout: 10000, // Таймаут 10 сек
-                        success: function(data) {
-                            _this.removeClass('queen-loading');
-                            _this.find('span').text('Моя Королева 👑');
+                        // Берем ID (KP или IMDB)
+                        var id = e.data.movie.imdb_id || e.data.movie.kp_id || e.data.movie.id;
+                        var req_url = api_link + '?id=' + id;
 
-                            // Проверка разных вариантов ответа API
-                            var items = data.items || data.playlist || (Array.isArray(data) ? data : []);
+                        // Делаем запрос
+                        var network = new Lampa.Reguest();
+                        network.silent(req_url, function(json) {
                             
-                            if (items.length) {
-                                Lampa.Select.show({
-                                    title: 'Озвучка — Моя Королева',
-                                    items: items.map(function(i) {
-                                        return {
-                                            title: i.title || i.name || 'Смотреть',
-                                            subtitle: i.quality || 'HD',
-                                            url: i.video || i.file || i.link,
-                                            stream: i.video || i.file || i.link // Lampa иногда ищет stream
-                                        };
-                                    }),
-                                    onSelect: function(item) {
-                                        Lampa.Player.run(item);
-                                        Lampa.Player.playlist([item]);
-                                    }
-                                });
+                            // Проверяем, есть ли видео внутри
+                            if (json) {
+                                var items = [];
+                                
+                                // Пытаемся понять формат ответа (массив или объект)
+                                if(Array.isArray(json)) items = json;
+                                else if(json.items) items = json.items;
+                                else if(json.playlist) items = json.playlist;
+                                else if(json.link || json.url) items = [json];
+
+                                if (items.length) {
+                                    Lampa.Select.show({
+                                        title: '👑 Выбор для Элиты',
+                                        items: items.map(function(i) {
+                                            return {
+                                                title: i.title || i.name || 'Смотреть',
+                                                subtitle: i.quality || 'FullHD',
+                                                url: i.video || i.link || i.url,
+                                                stream: i.video || i.link || i.url
+                                            };
+                                        }),
+                                        onSelect: function(item) {
+                                            Lampa.Player.play(item);
+                                            Lampa.Player.playlist([item]);
+                                        }
+                                    });
+                                } else {
+                                    Lampa.Noty.show('О.Д.: Пусто, братан. Банкомат пустой.');
+                                }
                             } else {
-                                Lampa.Noty.show('О.Д.: В базе пусто для этого фильма');
+                                Lampa.Noty.show('О.Д.: Ответ сервера пустой');
                             }
-                        },
-                        error: function(jqXHR, textStatus) {
-                            _this.removeClass('queen-loading');
-                            _this.find('span').text('Ошибка');
-                            setTimeout(function(){ _this.find('span').text('Моя Королева 👑'); }, 2000);
-                            
-                            Lampa.Noty.show('О.Д.: Ошибка сети: ' + textStatus);
-                        }
+                        }, function() {
+                            Lampa.Noty.show('О.Д.: Ошибка сети. Мельницы победили.');
+                        });
                     });
-                });
 
-                // ИСПРАВЛЕНИЕ: Вставляем кнопку в правильное место (блок кнопок), а не после торрентов
-                if (render.find('.full-start__buttons').length) {
+                    // Вставляем кнопку в общий ряд кнопок
                     render.find('.full-start__buttons').append(btn);
-                } else {
-                    // Резервный вариант, если блока кнопок нет (редко)
-                    render.find('.full-start__poster').after(btn);
                 }
             }
         });
     }
 
-    // Запуск с проверкой загрузки Lampa
+    // Запуск (Ждем пока загрузится Лампа)
     if (window.Lampa) {
         startPlugin();
     } else {
-        var wait = setInterval(function() {
+        var wait_load = setInterval(function() {
             if (window.Lampa) {
-                clearInterval(wait);
+                clearInterval(wait_load);
                 startPlugin();
             }
         }, 500);
     }
+
 })();
