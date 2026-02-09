@@ -14,7 +14,7 @@
     unic_id = Lampa.Utils.uid(8).toLowerCase();
     Lampa.Storage.set('lampac_unic_id', unic_id);
   }
-  
+  Lampa.Noty.show('👑 Моя Королева: Система готова');
     function getAndroidVersion() {
   if (Lampa.Platform.is('android')) {
     try {
