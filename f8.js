@@ -1,102 +1,74 @@
-(function () {
+(function() {
     'use strict';
 
-    // --- НАСТРОЙКИ ---
-    var _url = 'http://api.spotfy.biz/lam/f8lgdpq2'; // Твоя ссылка
-    
-    // Фразы, которые будут меняться при каждом нажатии
-    var _phrases = [
+    // Твоя НОВАЯ ссылка
+    var link = 'http://lampac.hdgo.me/online/js/f8lgdpq2';
+
+    // Фразы
+    var phrases = [
         'О.Д.: Бригада выехала...',
         'О.Д.: ВТБ спонсирует показ...',
-        'О.Д.: Томми Оливер взламывает сервер...',
-        'О.Д.: Деньги любят тишину. Загружаю...',
+        'О.Д.: Томми Оливер ищет файл...',
         'О.Д.: Загружаю в синий Lamborghini...',
-        'О.Д.: Райффайзен переводит средства...',
-        'О.Д.: Связь с космосом установлена...'
+        'О.Д.: Кэш посчитан. Жди...',
+        'О.Д.: Райффайзен дал добро...'
     ];
 
     function start() {
-        // Следим за открытием карточки фильма
-        Lampa.Listener.follow('full', function (e) {
+        // Добавляем кнопку
+        Lampa.Listener.follow('full', function(e) {
             if (e.type == 'complite') {
-                // Ищем блок с кнопками (Смотреть, Трейлер и т.д.)
-                var buttons = e.object.activity.render().find('.full-start__buttons');
+                var btn = $('<div class="full-start__button selector view--online" style="background-color: #2b2b2b; color: #fff; margin-top: 10px;">👑 Моя Королева</div>');
 
-                // Если блока кнопок нет (очень редкий случай) - выходим
-                if (!buttons.length) return;
+                btn.on('hover:enter click', function() {
+                    // 1. Показываем прикол
+                    Lampa.Noty.show(phrases[Math.floor(Math.random() * phrases.length)]);
 
-                // Проверка: если наша кнопка уже есть, не дублируем
-                if (buttons.find('.btn-queen').length) return;
-
-                // Создаем кнопку. Используем родные классы Лампы (selector view--online), чтобы работал пульт
-                var btn = $('<div class="full-start__button selector view--online btn-queen">' +
-                    '<span style="color: #a370db;">👑 Моя Королева</span>' + // Фиолетовый текст
-                    '</div>');
-
-                // Обработка нажатия (Клик мышкой или Enter на пульте)
-                btn.on('hover:enter click', function () {
+                    // 2. Формируем запрос
+                    var element = e.object.movie;
+                    var query = link + '?id=' + (element.imdb_id || element.kp_id || element.id) + '&serial=' + (element.number_of_seasons ? 1 : 0);
                     
-                    // 1. Показываем случайную фразу
-                    var random_text = _phrases[Math.floor(Math.random() * _phrases.length)];
-                    Lampa.Noty.show(random_text);
+                    // 3. Используем родной метод Лампы (Lampa.Network)
+                    var network = new Lampa.Reguest();
+                    network.silent(query, function(json) {
+                        
+                        // Пытаемся понять, что ответил сервер
+                        var items = json;
+                        if (json.results) items = json.results;
+                        else if (json.playlist) items = json.playlist;
+                        else if (json.items) items = json.items;
+                        else if (!Array.isArray(json)) items = [json];
 
-                    // 2. Получаем ID фильма (KP или IMDB)
-                    var id = e.data.movie.imdb_id || e.data.movie.kp_id || e.data.movie.id;
-                    
-                    // 3. Делаем запрос на твой сервер
-                    $.ajax({
-                        url: _url + '?id=' + id,
-                        type: 'GET',
-                        dataType: 'json',
-                        timeout: 10000, // Ждем 10 секунд
-                        success: function (json) {
-                            // Если пришел ответ
-                            var items = json.items || json.playlist || (Array.isArray(json) ? json : [json]);
-
-                            if (items.length && items[0]) {
-                                // Показываем меню выбора
-                                Lampa.Select.show({
-                                    title: '👑 Выбор Дона',
-                                    items: items.map(function (item) {
-                                        return {
-                                            title: item.title || item.name || 'Смотреть',
-                                            url: item.video || item.link || item.url,
-                                            stream: item.video || item.link || item.url,
-                                            quality: item.quality || 'MAX'
-                                        };
-                                    }),
-                                    onSelect: function (a) {
-                                        Lampa.Player.play(a);
-                                        Lampa.Player.playlist([a]);
-                                    }
-                                });
-                            } else {
-                                Lampa.Noty.show('О.Д.: Пусто. Касса закрыта.');
-                            }
-                        },
-                        error: function (jqXHR, textStatus) {
-                            // Если ошибка сети
-                            if(jqXHR.status == 404) Lampa.Noty.show('О.Д.: Файл не найден');
-                            else Lampa.Noty.show('О.Д.: Ошибка сети. Мельницы победили.');
+                        if (items.length) {
+                            Lampa.Select.show({
+                                title: '👑 Выбор Дона',
+                                items: items,
+                                onSelect: function(a) {
+                                    Lampa.Player.play(a);
+                                    Lampa.Player.playlist([a]);
+                                }
+                            });
+                        } else {
+                            Lampa.Noty.show('О.Д.: Пусто. Ссылка не дала видео.');
                         }
+                    }, function(a, c) {
+                        // Если ошибка
+                        Lampa.Noty.show('О.Д.: Ошибка сети. Проверь HTTP/HTTPS!');
                     });
                 });
 
-                // Добавляем кнопку в конец списка
-                buttons.append(btn);
+                e.object.activity.render().find('.full-start__buttons').append(btn);
             }
         });
     }
 
-    // Запуск скрипта только когда Лампа готова
     if (window.Lampa) start();
     else {
-        var timer = setInterval(function () {
+        var timer = setInterval(function() {
             if (window.Lampa) {
                 clearInterval(timer);
                 start();
             }
         }, 200);
     }
-
 })();
